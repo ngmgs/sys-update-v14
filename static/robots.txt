@@ -1,4 +1,1 @@
-User-agent: *
-Allow: /
-
 Sitemap: https://test-hugo.wikinist.com/sitemap.xml
