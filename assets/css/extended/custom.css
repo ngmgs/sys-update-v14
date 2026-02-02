@@ -1,0 +1,62 @@
+/* 画像リンクのクリック範囲を画像サイズに限定する */
+.post-content a {
+    display: inline-block;
+}
+
+/* 画像の下に変な隙間ができないように調整 */
+.post-content a img {
+    display: block;
+    margin: 0 auto;
+}
+
+/* 詳細ページのタイトルの下のディスクリプションを非表示にする */
+.post-single .post-description {
+    display: none;
+}
+
+/* 記事内のリンクの下線を消す */
+.post-content a, .entry-content a {
+    text-decoration: none !important;
+    box-shadow: none !important;
+}
+
+/* 画像リンクの下線も念のため消す */
+.post-content a img, .entry-content a img {
+    text-decoration: none !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* ボタンとして作ったリンクの下線を完全に消す */
+.link-buttons a {
+    text-decoration: none !important;
+}
+
+/* ボタンを囲むコンテナ */
+.link-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+/* すべてのボタンを黄色いメインスタイルで統一 */
+.link-buttons a {
+    display: block;
+    background: #f0c14b;
+    padding: 12px;
+    color: #111 !important; /* 文字色を黒で固定 */
+    border: 1px solid #a88734;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    transition: background 0.2s;
+}
+
+/* ホバー時に少し色を濃くする演出 */
+.link-buttons a:hover {
+    background: #e2b13c;
+    opacity: 0.9;
+}

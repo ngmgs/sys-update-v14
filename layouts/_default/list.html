@@ -1,0 +1,64 @@
+{{- define "main" }}
+
+{{- if .Content }}
+<div class="post-content">
+  {{- .Content -}}
+</div>
+{{- end }}
+
+<header class="page-header">
+  <h1>{{ .Title }}</h1>
+</header>
+
+{{- range .Paginator.Pages }}
+<article class="post-entry" style="position: relative; height: auto !important; overflow: visible !important;">
+  <header class="entry-header">
+    <h2>{{ .Title }}</h2>
+  </header>
+  
+  <div class="entry-content" style="max-height: none !important; overflow: visible !important; display: block !important; -webkit-line-clamp: unset !important; line-clamp: unset !important;">
+    {{- if .Params.cover.image }}
+      <div style="margin-bottom: 15px; position: relative; z-index: 20; display: inline-block;">
+        <a href="{{ .Permalink }}" style="display: block;">
+          <img src="{{ .Params.cover.image | absURL }}" alt="商品画像" style="max-width: 100%; height: auto; border-radius: 8px;">
+        </a>
+      </div>
+    {{- end }}
+
+    <p style="overflow: visible !important; white-space: normal !important; display: block !important;">{{ .Description }}</p>
+
+    {{- if .Params.amazon_url }}
+      <div style="margin-top: 15px; position: relative; z-index: 20;">
+        <a href="{{ .Params.amazon_url }}" 
+           target="_blank" 
+           rel="nofollow sponsored noopener noreferrer" 
+           style="display: inline-block; background-color: #f0c14b; border: 1px solid #a88734; border-radius: 8px; padding: 8px 16px; text-decoration: none; color: #111; font-weight: bold;">
+          👉 Amazonで詳細を見る
+        </a>
+      </div>
+    {{- end }}
+  </div>
+
+  <footer class="entry-footer">
+    {{ .Date.Format "2006-01-02 15:04" }}
+  </footer>
+
+  <a class="entry-link" aria-label="post link to {{ .Title | plainify }}" href="{{ .Permalink }}" style="color: transparent !important; font-size: 0 !important;"></a>
+</article>
+{{- end }}
+
+{{/* --- PaperModデフォルトのページネーション構造を再現 --- */}}
+{{- if gt .Paginator.TotalPages 1 }}
+<footer class="page-footer">
+  <nav class="pagination">
+    {{- if .Paginator.HasPrev }}
+    <a class="prev" href="{{ .Paginator.Prev.URL | absURL }}">« {{ i18n "prev_page" | default "Prev" }}</a>
+    {{- end }}
+    {{- if .Paginator.HasNext }}
+    <a class="next" href="{{ .Paginator.Next.URL | absURL }}">{{ i18n "next_page" | default "Next" }} »</a>
+    {{- end }}
+  </nav>
+</footer>
+{{- end }}
+
+{{- end }}

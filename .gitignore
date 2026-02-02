@@ -1,0 +1,13 @@
+# Hugoのビルド済みファイル（Cloudflare側で生成するので不要）
+public/
+resources/
+_vendor/
+
+# OSやエディタが作る一時ファイル
+.DS_Store
+.vscode/
+Thumbs.db
+
+# 秘密情報
+.env
+*.pem

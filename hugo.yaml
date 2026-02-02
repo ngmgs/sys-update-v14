@@ -1,0 +1,76 @@
+baseURL: "https://test-hugo.wikinist.com/"
+title: "俺の爆速ブログ"
+theme: PaperMod
+
+pagination:
+  pagerSize: 5
+
+enableRobotsTXT: true
+buildDrafts: false
+buildFuture: false
+buildExpired: false
+
+minify:
+  disableXML: true
+  minifyOutput: true
+
+params:
+  env: production
+  title: "俺の爆速ブログ"
+  description: "ブログ"
+  keywords: [Blog, Portfolio, PaperMod]
+  author: ""
+  DateFormat: "2006年01月02日 15:04"
+  defaultTheme: auto
+  disableThemeToggle: false
+
+  ShowAllPagesInArchive: true
+
+  ShowReadingTime: false
+  ShowShareButtons: true
+  ShowPostNavLinks: false
+  ShowBreadCrumbs: true
+  ShowCodeCopyButtons: false
+  ShowWordCount: false
+  UseHugoToc: false
+
+  # --- 追加：サマリーでHTML（画像）をそのまま表示する設定 ---
+  renderSummaryHTML: true
+
+  homeInfoParams:
+    Title: "Hi there 👋"
+    Content: "ブログです。"
+
+  socialIcons:
+    - name: x
+      url: "https://x.com/"
+    - name: github
+      url: "https://github.com/"
+
+  # 画像の設定（一応残しますが、hhh.py側で制御します）
+  cover:
+    hiddenInList: false
+    hiddenInSingle: false
+    relative: false
+    linkFullImages: true
+
+menu:
+  main:
+    - identifier: categories
+      name: categories
+      url: /categories/
+      weight: 10
+    - identifier: tags
+      name: tags
+      url: /tags/
+      weight: 20
+
+pygmentsUseClasses: true
+
+# --- 修正：HTMLタグ（画像リンクなど）を許可する ---
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+  highlight:
+    noClasses: false
