@@ -16,12 +16,12 @@ minify:
 
 # --- 追加：投稿ページ（posts）を一括でnoindexにし、サイトマップから除外する ---
 cascade:
-  - params:
-      robotsNoIndex: true
+  - target:
+      path: "/posts/**"   # content/posts 以下を指す
     sitemap:
       disable: true
-    target:
-      path: "/posts/**"
+    params:
+      robotsNoIndex: true
 
 params:
   env: production
