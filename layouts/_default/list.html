@@ -20,7 +20,12 @@
     {{- if .Params.cover.image }}
       <div style="margin-bottom: 15px; position: relative; z-index: 20; display: inline-block;">
         <a href="{{ .Permalink }}" style="display: block;">
-          <img src="{{ .Params.cover.image | absURL }}" alt="商品画像" style="max-width: 100%; height: auto; border-radius: 8px;">
+          <img src="{{ .Params.cover.image | absURL }}" 
+               alt="商品画像" 
+               style="max-width: 100%; height: auto; border-radius: 8px;"
+               fetchpriority="high"
+               width="400" 
+               height="300">
         </a>
       </div>
     {{- end }}
