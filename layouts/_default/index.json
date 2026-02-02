@@ -3,7 +3,8 @@
   {
     "title": {{ .Title | jsonify }},
     "permalink": {{ .Permalink | jsonify }},
-    "summary": {{ .Summary | plainify | truncate 160 | jsonify }},
+    {{/* descriptionがあれば優先し、なければSummaryを160文字で取得 */}}
+    "summary": {{ (or .Description (printf "%s..." (.Summary | plainify | truncate 160))) | jsonify }},
     {{- $imgSrc := "" -}}
     {{- $res := findRE `src="([^"]+)"` .Content 1 -}}
     {{- if $res -}}
