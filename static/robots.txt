@@ -1,1 +1,4 @@
 Sitemap: https://test-hugo.wikinist.com/sitemap.xml
+
+User-agent: meta-externalagent
+Disallow: /
