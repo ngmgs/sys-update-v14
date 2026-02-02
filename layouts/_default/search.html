@@ -23,10 +23,15 @@ window.addEventListener('load', () => {
     fetch('../index.json')
         .then(res => res.json())
         .then(data => {
-            const cleanData = data.filter(item => item.title);
+            // タイトルがあるものを抽出し、日付の新しい順（降順）に並び替え
+            const cleanData = data.filter(item => item.title).sort((a, b) => {
+                return new Date(b.date.replace(/-/g, '/')) - new Date(a.date.replace(/-/g, '/'));
+            });
+
             fuse = new Fuse(cleanData, {
                 keys: ['title', 'summary'],
-                threshold: 0.4
+                threshold: 0.4,
+                shouldSort: false // 元の並び替え（日付順）を優先するためfalseにする
             });
         });
 
@@ -47,9 +52,9 @@ window.addEventListener('load', () => {
                     <div>
                         <h3 style="margin: 0 0 5px 0; font-size: 1.1rem;">${item.title}</h3>
                         
-                        <p style="margin: 0; font-size: 0.85rem; color: var(--secondary);">${item.summary}</p>
-
                         <p style="margin: 0 0 5px 0; font-size: 0.75rem; color: var(--secondary); opacity: 0.8;">📅 ${item.date}</p>
+
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--secondary);">${item.summary}</p>
                     </div>
                     <a href="${item.permalink}" style="position: absolute; inset: 0; z-index: 1;"></a>
                 </li>
