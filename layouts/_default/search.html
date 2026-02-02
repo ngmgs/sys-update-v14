@@ -1,0 +1,61 @@
+{{- define "main" -}}
+<header class="page-header">
+    <h1>{{ .Title }}</h1>
+</header>
+
+<div id="searchbox">
+    <input id="searchInput" autofocus placeholder="{{ .Params.placeholder | default "検索ワードを入力..." }}" aria-label="search" type="search">
+    <ul id="searchResults" aria-label="search results" class="post-entry-container"></ul>
+</div>
+
+<script>
+// 検索ロジックのカスタマイズ
+window.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+
+    // 検索実行時に呼ばれるレンダリング関数を上書き
+    window.renderResults = (results) => {
+        searchResults.innerHTML = results.map(result => {
+            const item = result.item;
+            // トップページ(list.html)のHTML構造を模倣
+            return `
+                <article class="post-entry">
+                    ${item.image ? `<figure class="entry-cover"><img src="${item.image}" alt="${item.title}"></figure>` : ''}
+                    <header class="entry-header">
+                        <h2>${item.title}</h2>
+                    </header>
+                    <div class="entry-content">
+                        <p>${item.summary || ''}</p>
+                    </div>
+                    <a class="entry-link" aria-label="post link to ${item.title}" href="${item.permalink}"></a>
+                </article>
+            `;
+        }).join('');
+    };
+});
+</script>
+
+<style>
+/* 検索結果をトップページのリスト形式に合わせるための調整 */
+.post-entry {
+    position: relative;
+    margin-bottom: var(--gap);
+    padding: var(--gap);
+    background: var(--entry);
+    border-radius: var(--radius);
+    transition: transform 0.1s;
+    border: 1px solid var(--border);
+}
+.post-entry:hover {
+    transform: translateY(-2px);
+}
+.entry-cover img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    object-fit: cover;
+}
+</style>
+{{- end -}}
