@@ -14,6 +14,15 @@ minify:
   disableXML: true
   minifyOutput: true
 
+# --- 追加：投稿ページ（posts）を一括でnoindexにし、サイトマップから除外する ---
+[[cascade]]
+  [cascade.params]
+    robotsNoIndex: true
+  [cascade.sitemap]
+    disable: true
+  [cascade.target]
+    path: "/posts/**"
+
 params:
   env: production
   title: "俺の爆速ブログ"
