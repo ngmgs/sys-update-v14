@@ -8,26 +8,43 @@
     <ul id="searchResults" aria-label="search results"></ul>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+
 <script>
 window.addEventListener('DOMContentLoaded', () => {
+    let fuse;
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
 
-    // PaperModの検索結果表示機能を上書き
-    window.renderResults = (results) => {
+    // 1. index.json を取得
+    fetch('../index.json')
+        .then(response => response.json())
+        .then(data => {
+            const options = {
+                keys: ['title', 'summary', 'content'],
+                threshold: 0.4
+            };
+            fuse = new Fuse(data, options);
+        });
+
+    // 2. 入力イベントを監視して表示を更新
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value;
+        const results = fuse.search(query);
+
         if (results.length === 0) {
             searchResults.innerHTML = '';
             return;
         }
 
+        // トップページの list.html の見た目を再現
         searchResults.innerHTML = results.map(result => {
             const item = result.item;
-            // トップページ(list.html)の構造を再現
             return `
                 <article class="post-entry">
                     ${item.image ? `
                     <figure class="entry-cover">
-                        <img src="${item.image}" alt="${item.title}" loading="lazy">
+                        <img src="${item.image}" alt="${item.title}" style="width:100%; height:auto; border-radius:8px;">
                     </figure>` : ''}
                     <header class="entry-header">
                         <h2>${item.title}</h2>
@@ -35,51 +52,31 @@ window.addEventListener('DOMContentLoaded', () => {
                     <div class="entry-content">
                         <p>${item.summary}</p>
                     </div>
-                    <a class="entry-link" aria-label="post link to ${item.title}" href="${item.permalink}"></a>
+                    <a class="entry-link" href="${item.permalink}"></a>
                 </article>
             `;
         }).join('');
-    };
+    });
 });
 </script>
 
 <style>
-/* トップページのリスト形式に寄せるためのスタイル */
-#searchResults {
-    list-style: none;
-    padding: 0;
-}
+/* 見た目を整える最小限のCSS */
+#searchResults { list-style: none; padding: 0; }
 .post-entry {
     position: relative;
     margin-bottom: 20px;
     padding: 20px;
     background: var(--entry);
     border-radius: var(--radius);
-    transition: transform 0.1s;
     border: 1px solid var(--border);
 }
-.post-entry:hover {
-    transform: translateY(-2px);
-}
-.entry-cover img {
-    width: 100%;
-    height: auto;
-    border-radius: var(--radius);
-    margin-bottom: 15px;
-    object-fit: cover;
-    max-height: 300px; /* 画像が大きすぎないように制限 */
-}
-.entry-header h2 {
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-}
-.entry-content {
-    font-size: 0.9rem;
-    color: var(--secondary);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.entry-header h2 { font-size: 1.5rem; margin: 10px 0; }
+.entry-content { font-size: 0.9rem; color: var(--secondary); }
+.entry-link {
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    z-index: 1;
 }
 </style>
 {{- end -}}
