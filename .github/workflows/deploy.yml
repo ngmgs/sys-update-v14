@@ -21,8 +21,19 @@ jobs:
           hugo-version: 'latest'
           extended: true
 
+      # --- ここから高速化設定 ---
+      - name: cache-sys-files
+        uses: actions/cache@v4
+        with:
+          path: /tmp/sys_temp
+          key: ${{ runner.os }}-sys-${{ hashFiles('**/lockfiles') }}
+          restore-keys: |
+            ${{ runner.os }}-sys-
+
+      # キャッシュフォルダを指定してビルド
       - name: data-processing
-        run: hugo --minify
+        run: hugo --minify --cacheDir /tmp/sys_temp
+      # --- ここまで高速化設定 ---
 
       - name: rsync-remote
         uses: easingthemes/ssh-deploy@main
@@ -31,6 +42,6 @@ jobs:
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
           REMOTE_PORT: ${{ secrets.SSH_PORT }}
-          TARGET: "/var/www/test-hugo/"
+          TARGET: ${{ secrets.VPS_TARGET }}
           SOURCE: "public/"
           ARGS: "-avz --delete"
