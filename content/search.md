@@ -1,4 +1,6 @@
 ---
 title: "検索"
-layout: "custom-search"
+layout: "search"
+summary: "search"
+placeholder: "キーワードを入力（例：ピカチュウ）"
 ---
