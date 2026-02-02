@@ -1,9 +1,12 @@
 [
   {{- range .Site.RegularPages -}}
+  {{- /* 検索ページ自体は結果に出さない */ -}}
+  {{- if ne .Layout "search" -}}
   {
     "title": {{ .Title | jsonify }},
     "permalink": {{ .Permalink | jsonify }},
-    {{/* .Params.description を明示的に指定。なければSummaryを使用 */}}
+    "date": {{ .Date.Format "2006-01-02" | jsonify }},
+    {{- /* 優先順位: Description > Summary(160文字) */ -}}
     "summary": {{ (or .Params.description (.Summary | plainify | truncate 160)) | jsonify }},
     {{- $imgSrc := "" -}}
     {{- $res := findRE `src="([^"]+)"` .Content 1 -}}
@@ -12,6 +15,7 @@
     {{- end -}}
     "image": {{ $imgSrc | jsonify }}
   },
+  {{- end -}}
   {{- end -}}
   {} 
 ]
