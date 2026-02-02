@@ -1,16 +1,16 @@
 [
-  {{- range $i, $e := .Site.RegularPages -}}
-  {{- if $i -}}, {{- end -}}
+  {{- range .Site.RegularPages -}}
   {
     "title": {{ .Title | jsonify }},
     "permalink": {{ .Permalink | jsonify }},
     "summary": {{ .Summary | plainify | truncate 160 | jsonify }},
     {{- $imgSrc := "" -}}
-    {{- $res := findRE `src="([^"]+)"` .Summary 1 -}}
+    {{- $res := findRE `src="([^"]+)"` .Content 1 -}}
     {{- if $res -}}
       {{- $imgSrc = (index $res 0 | replaceRE `src="([^"]+)"` "$1") -}}
     {{- end -}}
     "image": {{ $imgSrc | jsonify }}
-  }
+  },
   {{- end -}}
+  {} 
 ]
