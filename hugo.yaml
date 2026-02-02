@@ -12,6 +12,13 @@ outputs:
     - RSS
     - JSON
 
+# JSONの出力ルールを定義
+outputFormats:
+  JSON:
+    baseName: index
+    isPlainText: true
+    mediaType: application/json
+
 enableRobotsTXT: false
 buildDrafts: false
 buildFuture: false
