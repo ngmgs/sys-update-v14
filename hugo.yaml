@@ -3,7 +3,7 @@ title: "俺の爆速ブログ"
 theme: PaperMod
 
 pagination:
-  pagerSize: 5
+  pagerSize: 10
 
 enableRobotsTXT: true
 buildDrafts: false
