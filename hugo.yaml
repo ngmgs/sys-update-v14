@@ -5,6 +5,13 @@ theme: PaperMod
 pagination:
   pagerSize: 10
 
+# 検索用設定の追加
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON
+
 enableRobotsTXT: false
 buildDrafts: false
 buildFuture: false
@@ -65,6 +72,10 @@ params:
 
 menu:
   main:
+    - identifier: search
+      name: 🔍 検索
+      url: /search/
+      weight: 5
     - identifier: categories
       name: categories
       url: /categories/
