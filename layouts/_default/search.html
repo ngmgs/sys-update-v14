@@ -4,7 +4,9 @@
 </header>
 
 <div id="my-search-container">
-    <input id="mySearchInput" autofocus placeholder="キーワードを入力..." aria-label="search" type="search" 
+    <input id="mySearchInput" autofocus 
+           placeholder="{{ .Params.placeholder | default "検索..." }}" 
+           aria-label="search" type="search" autocomplete="off" 
            style="width: 100%; padding: 15px; font-size: 1.2rem; border-radius: 8px; border: 1px solid var(--border); background: var(--entry); color: var(--primary);">
     <ul id="mySearchResults" style="list-style: none; padding: 0; margin-top: 20px;"></ul>
 </div>
@@ -21,7 +23,6 @@ window.addEventListener('load', () => {
     fetch('../index.json')
         .then(res => res.json())
         .then(data => {
-            // 最後の空要素を除去
             const cleanData = data.filter(item => item.title);
             fuse = new Fuse(cleanData, {
                 keys: ['title', 'summary'],
