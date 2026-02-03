@@ -18,23 +18,24 @@
   
   <div class="entry-content" style="max-height: none !important; overflow: visible !important; display: block !important; -webkit-line-clamp: unset !important; line-clamp: unset !important;">
     
-    {{/* --- 画像エリア（クリックでブログ記事へ） --- */}}
+    {{/* --- 画像エリア --- */}}
     {{- if .Params.cover.image }}
       <div style="margin-bottom: 15px; position: relative; z-index: 2; display: block; aspect-ratio: 4 / 3; width: 100%; max-width: 400px; background-color: #f0f0f0; border-radius: 8px; overflow: hidden;">
         <a href="{{ .Permalink }}" 
            style="display: block; width: 100%; height: 100%;">
+          {{/* 修正ポイント：fetchpriority="high" をやめて loading="lazy" に変更 */}}
           <img src="{{ .Params.cover.image | absURL }}" 
                alt="{{ .Title }}" 
-               style="width: 100%; height: 100%; object-fit: cover;"
-               fetchpriority="high">
+               loading="lazy"
+               decoding="async"
+               style="width: 100%; height: 100%; object-fit: cover;">
         </a>
       </div>
     {{- end }}
 
-    {{/* --- 説明文 --- */}}
     <p style="overflow: visible !important; white-space: normal !important; display: block !important;">{{ .Description }}</p>
 
-    {{/* --- [NEW] メルカリへ飛ぶボタン（z-indexを高くしてクリック可能にする） --- */}}
+    {{/* --- メルカリボタン --- */}}
     {{- if .Params.item_url }}
     <div style="margin-top: 15px; position: relative; z-index: 10;">
       <a href="{{ .Params.item_url }}" 
@@ -51,8 +52,6 @@
     {{ .Date.Format "2006-01-02 15:04" }}
   </footer>
 
-  {{/* --- 全体リンク（透明なカバー）：ブログ記事へ飛ぶ --- */}}
-  {{/* z-index: 1 なので、上のメルカリボタン(z-index: 10)の方が優先される */}}
   <a class="entry-link" 
      aria-label="Read more about {{ .Title }}" 
      href="{{ .Permalink }}"
