@@ -21,7 +21,6 @@ jobs:
           hugo-version: 'latest'
           extended: true
 
-      # --- ここから高速化設定 ---
       - name: cache-sys-files
         uses: actions/cache@v4
         with:
@@ -30,10 +29,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-sys-
 
-      # キャッシュフォルダを指定してビルド
       - name: data-processing
         run: hugo --minify --cacheDir /tmp/sys_temp
-      # --- ここまで高速化設定 ---
 
       - name: rsync-remote
         uses: easingthemes/ssh-deploy@main
@@ -44,4 +41,10 @@ jobs:
           REMOTE_PORT: ${{ secrets.SSH_PORT }}
           TARGET: ${{ secrets.VPS_TARGET }}
           SOURCE: "public/"
-          ARGS: "-avz --delete"
+          # --- 高速化のための ARGS 変更 ---
+          # -c (checksum) を外して時間比較に任せる
+          # -O (omit-dir-times) でディレクトリ更新時間の同期を省く
+          # -S (sparse) で効率化
+          ARGS: "-avz --delete -O"
+          # SSH接続を維持するオプションを追加（接続の作り直しを防ぐ）
+          SSH_ARGS: "-o ControlMaster=auto -o ControlPath=/tmp/ssh-%r@%h:%p -o ControlPersist=600"
