@@ -18,12 +18,10 @@
   
   <div class="entry-content" style="max-height: none !important; overflow: visible !important; display: block !important; -webkit-line-clamp: unset !important; line-clamp: unset !important;">
     
-    {{/* --- 画像エリア（クリックでメルカリへ） --- */}}
+    {{/* --- 画像エリア（クリックでブログ記事へ） --- */}}
     {{- if .Params.cover.image }}
       <div style="margin-bottom: 15px; position: relative; z-index: 2; display: block; aspect-ratio: 4 / 3; width: 100%; max-width: 400px; background-color: #f0f0f0; border-radius: 8px; overflow: hidden;">
-        <a href="{{ .Params.item_url | default .Permalink }}" 
-           target="_blank" 
-           rel="nofollow sponsored" 
+        <a href="{{ .Permalink }}" 
            style="display: block; width: 100%; height: 100%;">
           <img src="{{ .Params.cover.image | absURL }}" 
                alt="{{ .Title }}" 
@@ -36,26 +34,28 @@
     {{/* --- 説明文 --- */}}
     <p style="overflow: visible !important; white-space: normal !important; display: block !important;">{{ .Description }}</p>
 
-    {{/* --- [NEW] ブログ記事を読むためのボタン（z-indexを高くしてクリック可能にする） --- */}}
+    {{/* --- [NEW] メルカリへ飛ぶボタン（z-indexを高くしてクリック可能にする） --- */}}
+    {{- if .Params.item_url }}
     <div style="margin-top: 15px; position: relative; z-index: 10;">
-      <a href="{{ .Permalink }}" 
-         style="display: inline-block; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; padding: 8px 16px; text-decoration: none; color: #555; font-size: 0.9em; font-weight: bold; transition: background-color 0.2s;">
-        📖 ブログで詳細を読む
+      <a href="{{ .Params.item_url }}" 
+         target="_blank" 
+         rel="nofollow sponsored noopener noreferrer"
+         style="display: inline-block; background-color: #f0c14b; border: 1px solid #a88734; border-radius: 8px; padding: 10px 20px; text-decoration: none; color: #111; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        👉 メルカリで詳細を見る
       </a>
     </div>
+    {{- end }}
   </div>
 
   <footer class="entry-footer">
     {{ .Date.Format "2006-01-02 15:04" }}
   </footer>
 
-  {{/* --- 全体リンク（透明なカバー）：基本はメルカリへ飛ぶ --- */}}
-  {{/* z-index: 1 なので、上のボタン(z-index: 10)の方が優先される */}}
+  {{/* --- 全体リンク（透明なカバー）：ブログ記事へ飛ぶ --- */}}
+  {{/* z-index: 1 なので、上のメルカリボタン(z-index: 10)の方が優先される */}}
   <a class="entry-link" 
-     aria-label="Visit {{ .Title }}" 
-     href="{{ .Params.item_url | default .Permalink }}"
-     target="_blank"
-     rel="nofollow sponsored"
+     aria-label="Read more about {{ .Title }}" 
+     href="{{ .Permalink }}"
      style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; z-index: 1;">
   </a>
 
