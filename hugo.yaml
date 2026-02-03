@@ -86,7 +86,7 @@ menu:
       weight: 20
     - identifier: test
       name: test
-      url: /search/
+      url: /tags/
       weight: 20
 
 pygmentsUseClasses: true
