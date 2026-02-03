@@ -30,13 +30,13 @@
 
     <p style="overflow: visible !important; white-space: normal !important; display: block !important;">{{ .Description }}</p>
 
-    {{- if .Params.amazon_url }}
+    {{- if .Params.product_url }}
       <div style="margin-top: 15px; position: relative; z-index: 20;">
-        <a href="{{ .Params.amazon_url }}" 
+        <a href="{{ .Params.product_url }}" 
            target="_blank" 
            rel="nofollow sponsored noopener noreferrer" 
            style="display: inline-block; background-color: #f0c14b; border: 1px solid #a88734; border-radius: 8px; padding: 8px 16px; text-decoration: none; color: #111; font-weight: bold;">
-          👉 Amazonで詳細を見る
+          👉 メルカリで詳細を見る
         </a>
       </div>
     {{- end }}
