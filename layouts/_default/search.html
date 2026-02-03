@@ -5,10 +5,9 @@
 
 <div id="my-search-container">
     <input id="mySearchInput" autofocus 
-           placeholder="{{ .Params.placeholder | default "検索..." }}" 
+           placeholder="{{ .Params.placeholder | default "検索キーワードを入力..." }}" 
            aria-label="search" type="search" autocomplete="off" 
            style="width: 100%; padding: 15px; font-size: 1.2rem; border-radius: 8px; border: 1px solid var(--border); background: var(--entry); color: var(--primary);">
-    
     <ul id="mySearchResults" style="list-style: none; padding: 0; margin-top: 20px;"></ul>
 </div>
 
@@ -17,91 +16,119 @@
 <script>
 window.addEventListener('load', () => {
     let fuse;
-    let allResults = [];      // 検索にヒットした全データ
+    let allResults = [];
     let currentDisplayCount = 10;
-    let isLoading = false;    // 二重読み込み防止フラグ
+    let isLoading = false;
+    let searchTimeout; // デバウンス用
     const input = document.getElementById('mySearchInput');
     const list = document.getElementById('mySearchResults');
 
-    // 1. センチネル（監視用パーツ）を作成（既存のJSと同じ作り）
+    // センチネルの作成
     const sentinel = document.createElement('div');
     sentinel.id = 'search-sentinel';
-    sentinel.textContent = '読み込み中...';
     sentinel.style.cssText = 'text-align:center; padding:20px; color:#666; font-size:14px; display:none;';
     list.parentNode.insertBefore(sentinel, list.nextSibling);
 
-    // 2. データの読み込み
+    // データの読み込み
     fetch('../index.json')
         .then(res => res.json())
         .then(data => {
             const cleanData = data.filter(item => item.title).sort((a, b) => {
                 return new Date(b.date.replace(/-/g, '/')) - new Date(a.date.replace(/-/g, '/'));
             });
-            fuse = new Fuse(cleanData, { keys: ['title', 'summary'], threshold: 0.4, shouldSort: false });
+            // includeMatchesをtrueにして、ハイライトを可能にする
+            fuse = new Fuse(cleanData, { 
+                keys: ['title', 'summary'], 
+                threshold: 0.4, 
+                shouldSort: false,
+                includeMatches: true 
+            });
+
+            // ブラウザバック対策：URLから検索ワードを復元
+            const params = new URLSearchParams(window.location.search);
+            const savedQuery = params.get('s');
+            if (savedQuery) {
+                input.value = savedQuery;
+                performSearch(savedQuery, false);
+            }
         });
 
-    // 3. 追加読み込み関数（既存の loadNextPage に相当）
-    function loadMoreResults() {
-        if (isLoading || allResults.length <= currentDisplayCount) return;
-        
-        isLoading = true;
-        
-        // 少し間を置いて「読み込み中」を体験させる（必要なければすぐ実行でもOK）
-        setTimeout(() => {
-            const start = currentDisplayCount;
-            currentDisplayCount += 10;
-            const nextBatch = allResults.slice(start, currentDisplayCount);
-            
-            const newHtml = nextBatch.map(result => renderItem(result.item)).join('');
-            list.insertAdjacentHTML('beforeend', newHtml);
-
-            isLoading = false;
-            if (currentDisplayCount >= allResults.length) {
-                sentinel.textContent = 'すべての結果を表示しました';
-            }
-        }, 300);
+    // キーワードハイライト関数
+    function highlight(text, query) {
+        if (!query) return text;
+        const regex = new RegExp(`(${query})`, 'gi');
+        return text.replace(regex, '<mark style="background:none; color:#ffb300; font-weight:bold; padding:0;">$1</mark>');
     }
 
-    // アイテム1つ分のHTML作成（コードを綺麗にするため分離）
-    function renderItem(item) {
+    // アイテム描画
+    function renderItem(result, query) {
+        const item = result.item;
         return `
             <li style="position: relative; margin-bottom: 20px; padding: 15px; background: var(--entry); border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center;">
                 ${item.image ? `<img src="${item.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-right: 15px;">` : ''}
                 <div>
-                    <h3 style="margin: 0 0 5px 0; font-size: 1.1rem;">${item.title}</h3>
+                    <h3 style="margin: 0 0 5px 0; font-size: 1.1rem;">${highlight(item.title, query)}</h3>
                     <p style="margin: 0 0 5px 0; font-size: 0.75rem; color: var(--secondary); opacity: 0.8;">📅 ${item.date}</p>
-                    <p style="margin: 0; font-size: 0.85rem; color: var(--secondary);">${item.summary}</p>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--secondary);">${highlight(item.summary, query)}</p>
                 </div>
                 <a href="${item.permalink}" style="position: absolute; inset: 0; z-index: 1;"></a>
             </li>
         `;
     }
 
-    // 4. 監視（IntersectionObserver）
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !isLoading) {
-            loadMoreResults();
-        }
-    }, { rootMargin: '200px' });
-
-    observer.observe(sentinel);
-
-    // 5. 検索入力
-    input.addEventListener('input', () => {
-        const query = input.value.trim();
+    // 検索実行
+    function performSearch(query, updateUrl = true) {
         currentDisplayCount = 10;
+        allResults = fuse.search(query);
+        list.innerHTML = allResults.slice(0, 10).map(res => renderItem(res, query)).join('');
+        
+        sentinel.style.display = allResults.length > 10 ? 'block' : (allResults.length > 0 ? 'block' : 'none');
+        sentinel.textContent = allResults.length > 10 ? '読み込み中...' : (allResults.length > 0 ? 'すべての結果を表示しました' : '一致する結果がありません');
+
+        if (updateUrl) {
+            const newUrl = window.location.pathname + (query ? '?s=' + encodeURIComponent(query) : '');
+            window.history.replaceState(null, '', newUrl);
+        }
+    }
+
+    // 入力イベント（デバウンス付き）
+    input.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        const query = input.value.trim();
+        
         if (!query) {
             allResults = [];
             list.innerHTML = '';
             sentinel.style.display = 'none';
+            window.history.replaceState(null, '', window.location.pathname);
             return;
         }
-        allResults = fuse.search(query);
-        list.innerHTML = allResults.slice(0, 10).map(result => renderItem(result.item)).join('');
-        
-        sentinel.style.display = allResults.length > 10 ? 'block' : 'none';
-        sentinel.textContent = allResults.length > 10 ? '読み込み中...' : 'これ以上結果はありません';
+
+        // 250ms 入力が止まったら実行
+        searchTimeout = setTimeout(() => {
+            performSearch(query);
+        }, 250);
     });
+
+    // 無限スクロール監視
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && allResults.length > currentDisplayCount && !isLoading) {
+            isLoading = true;
+            const start = currentDisplayCount;
+            currentDisplayCount += 10;
+            const query = input.value.trim();
+            const nextBatch = allResults.slice(start, currentDisplayCount);
+            
+            list.insertAdjacentHTML('beforeend', nextBatch.map(res => renderItem(res, query)).join(''));
+            
+            if (currentDisplayCount >= allResults.length) {
+                sentinel.textContent = 'すべての結果を表示しました';
+            }
+            isLoading = false;
+        }
+    }, { rootMargin: '200px' });
+
+    observer.observe(sentinel);
 });
 </script>
 {{- end }}
