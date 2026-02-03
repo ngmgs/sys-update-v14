@@ -31,12 +31,7 @@ cascade:
       robotsNoIndex: true
 
 params:
-  # テストサイト用設定++++++++++++++++++++++++++++++++
-  # これを true にすると、トップページも含む全ページが noindex になります
-  robotsNoIndex: true
-  # テストサイト用設定++++++++++++++++++++++++++++++++
-  
-  env: development
+  env: production
   title: "俺の爆速ブログ"
   description: "ブログ"
   keywords: [Blog, Portfolio, PaperMod]
