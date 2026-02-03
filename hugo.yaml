@@ -34,8 +34,8 @@ cascade:
       path: "/posts/**"   # content/posts 以下を指す
     sitemap:
       disable: true
-    params:
-      robotsNoIndex: true
+    # params:
+    #   robotsNoIndex: true
 
 params:
   env: production
