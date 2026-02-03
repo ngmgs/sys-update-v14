@@ -1,6 +1,7 @@
 baseURL: "https://test-hugo.wikinist.com/"
 title: "俺の爆速ブログ"
 theme: PaperMod
+robotsNoIndex: true
 
 pagination:
   pagerSize: 10
@@ -33,9 +34,9 @@ cascade:
 params:
   # テストサイト用設定++++++++++++++++++++++++++++++++
   # これを true にすると、トップページも含む全ページが noindex になります
-  robotsNoIndex: true
+  # robotsNoIndex: true
   # テストサイト用設定++++++++++++++++++++++++++++++++
-  
+
   env: production
   title: "俺の爆速ブログ"
   description: "ブログ"
