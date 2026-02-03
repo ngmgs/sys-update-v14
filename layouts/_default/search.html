@@ -19,24 +19,21 @@ window.addEventListener('load', () => {
     let allResults = [];
     let currentDisplayCount = 10;
     let isLoading = false;
-    let searchTimeout; // デバウンス用
+    let searchTimeout;
     const input = document.getElementById('mySearchInput');
     const list = document.getElementById('mySearchResults');
 
-    // センチネルの作成
     const sentinel = document.createElement('div');
     sentinel.id = 'search-sentinel';
     sentinel.style.cssText = 'text-align:center; padding:20px; color:#666; font-size:14px; display:none;';
     list.parentNode.insertBefore(sentinel, list.nextSibling);
 
-    // データの読み込み
     fetch('../index.json')
         .then(res => res.json())
         .then(data => {
             const cleanData = data.filter(item => item.title).sort((a, b) => {
                 return new Date(b.date.replace(/-/g, '/')) - new Date(a.date.replace(/-/g, '/'));
             });
-            // includeMatchesをtrueにして、ハイライトを可能にする
             fuse = new Fuse(cleanData, { 
                 keys: ['title', 'summary'], 
                 threshold: 0.4, 
@@ -44,23 +41,21 @@ window.addEventListener('load', () => {
                 includeMatches: true 
             });
 
-            // ブラウザバック対策：URLから検索ワードを復元
+            // 【復元】URLとセッションストレージから状態を戻す
             const params = new URLSearchParams(window.location.search);
             const savedQuery = params.get('s');
             if (savedQuery) {
                 input.value = savedQuery;
-                performSearch(savedQuery, false);
+                performSearch(savedQuery, false, true);
             }
         });
 
-    // キーワードハイライト関数
     function highlight(text, query) {
         if (!query) return text;
         const regex = new RegExp(`(${query})`, 'gi');
         return text.replace(regex, '<mark style="background:none; color:#ffb300; font-weight:bold; padding:0;">$1</mark>');
     }
 
-    // アイテム描画
     function renderItem(result, query) {
         const item = result.item;
         return `
@@ -76,41 +71,60 @@ window.addEventListener('load', () => {
         `;
     }
 
-    // 検索実行
-    function performSearch(query, updateUrl = true) {
-        currentDisplayCount = 10;
-        allResults = fuse.search(query);
-        list.innerHTML = allResults.slice(0, 10).map(res => renderItem(res, query)).join('');
+    function performSearch(query, updateUrl = true, isRestore = false) {
+        let displayLimit = 10;
         
-        sentinel.style.display = allResults.length > 10 ? 'block' : (allResults.length > 0 ? 'block' : 'none');
-        sentinel.textContent = allResults.length > 10 ? '読み込み中...' : (allResults.length > 0 ? 'すべての結果を表示しました' : '一致する結果がありません');
+        // スマホ対策：戻った時だけ、前回表示していた件数を一気に復元
+        if (isRestore) {
+            const savedCount = sessionStorage.getItem('search-count');
+            if (savedCount) displayLimit = parseInt(savedCount);
+        }
+
+        allResults = fuse.search(query);
+        currentDisplayCount = displayLimit;
+        list.innerHTML = allResults.slice(0, displayLimit).map(res => renderItem(res, query)).join('');
+        
+        sentinel.style.display = allResults.length > displayLimit ? 'block' : (allResults.length > 0 ? 'block' : 'none');
+        sentinel.textContent = allResults.length > displayLimit ? '読み込み中...' : (allResults.length > 0 ? 'すべての結果を表示しました' : '一致する結果がありません');
 
         if (updateUrl) {
             const newUrl = window.location.pathname + (query ? '?s=' + encodeURIComponent(query) : '');
             window.history.replaceState(null, '', newUrl);
         }
+
+        // スマホ対策：描画完了を待ってからスクロール位置を復元
+        if (isRestore) {
+            const scrollY = sessionStorage.getItem('search-scroll');
+            if (scrollY) {
+                // スマホのレンダリング時間を考慮して少し待機
+                setTimeout(() => window.scrollTo(0, parseInt(scrollY)), 100);
+            }
+        }
     }
 
-    // 入力イベント（デバウンス付き）
+    // スクロール位置と表示件数を保存
+    window.addEventListener('scroll', () => {
+        if (input.value.trim()) {
+            sessionStorage.setItem('search-scroll', window.scrollY);
+            sessionStorage.setItem('search-count', currentDisplayCount);
+        }
+    }, { passive: true });
+
     input.addEventListener('input', () => {
         clearTimeout(searchTimeout);
         const query = input.value.trim();
-        
         if (!query) {
             allResults = [];
             list.innerHTML = '';
             sentinel.style.display = 'none';
             window.history.replaceState(null, '', window.location.pathname);
+            sessionStorage.removeItem('search-scroll');
+            sessionStorage.removeItem('search-count');
             return;
         }
-
-        // 250ms 入力が止まったら実行
-        searchTimeout = setTimeout(() => {
-            performSearch(query);
-        }, 250);
+        searchTimeout = setTimeout(() => performSearch(query), 250);
     });
 
-    // 無限スクロール監視
     const observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && allResults.length > currentDisplayCount && !isLoading) {
             isLoading = true;
