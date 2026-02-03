@@ -10,35 +10,38 @@
   <h1>{{ .Title }}</h1>
 </header>
 
-{{- range .Paginator.Pages }}
+{{/* 修正ポイント：$index を正しく定義し、内部でも $page を参照するように変更 */}}
+{{- $pages := .Paginator.Pages }}
+{{- range $index, $page := $pages }}
 <article class="post-entry" style="position: relative; height: auto !important; overflow: visible !important;">
   <header class="entry-header">
-    <h2>{{ .Title }}</h2>
+    <h2>{{ $page.Title }}</h2>
   </header>
   
-  <div class="entry-content" style="max-height: none !important; overflow: visible !important; display: block !important; -webkit-line-clamp: unset !important; line-clamp: unset !important;">
+  <div class="entry-content" style="max-height: none !important; overflow: visible !important; display: block !important;">
     
-    {{/* --- 画像エリア --- */}}
-    {{- if .Params.cover.image }}
+    {{- if $page.Params.cover.image }}
       <div style="margin-bottom: 15px; position: relative; z-index: 2; display: block; aspect-ratio: 4 / 3; width: 100%; max-width: 400px; background-color: #f0f0f0; border-radius: 8px; overflow: hidden;">
-        <a href="{{ .Permalink }}" 
-           style="display: block; width: 100%; height: 100%;">
-          {{/* 修正ポイント：fetchpriority="high" をやめて loading="lazy" に変更 */}}
-          <img src="{{ .Params.cover.image | absURL }}" 
-               alt="{{ .Title }}" 
-               loading="lazy"
-               decoding="async"
+        <a href="{{ $page.Permalink }}" style="display: block; width: 100%; height: 100%;">
+          {{/* 1枚目だけ fetchpriority="high" を適用 */}}
+          <img src="{{ $page.Params.cover.image | absURL }}" 
+               alt="{{ $page.Title }}" 
+               {{ if eq $index 0 }}
+                 fetchpriority="high"
+               {{ else }}
+                 loading="lazy"
+                 decoding="async"
+               {{ end }}
                style="width: 100%; height: 100%; object-fit: cover;">
         </a>
       </div>
     {{- end }}
 
-    <p style="overflow: visible !important; white-space: normal !important; display: block !important;">{{ .Description }}</p>
+    <p style="overflow: visible !important;">{{ $page.Description }}</p>
 
-    {{/* --- メルカリボタン --- */}}
-    {{- if .Params.item_url }}
+    {{- if $page.Params.item_url }}
     <div style="margin-top: 15px; position: relative; z-index: 10;">
-      <a href="{{ .Params.item_url }}" 
+      <a href="{{ $page.Params.item_url }}" 
          target="_blank" 
          rel="nofollow sponsored noopener noreferrer"
          style="display: inline-block; background-color: #f0c14b; border: 1px solid #a88734; border-radius: 8px; padding: 10px 20px; text-decoration: none; color: #111; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
@@ -49,27 +52,22 @@
   </div>
 
   <footer class="entry-footer">
-    {{ .Date.Format "2006-01-02 15:04" }}
+    {{ $page.Date.Format "2006-01-02 15:04" }}
   </footer>
 
-  <a class="entry-link" 
-     aria-label="Read more about {{ .Title }}" 
-     href="{{ .Permalink }}"
-     style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; z-index: 1;">
-  </a>
+  <a class="entry-link" href="{{ $page.Permalink }}" style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; z-index: 1;"></a>
 
 </article>
 {{- end }}
 
-{{/* --- ページネーション --- */}}
 {{- if gt .Paginator.TotalPages 1 }}
 <footer class="page-footer">
   <nav class="pagination">
     {{- if .Paginator.HasPrev }}
-    <a class="prev" href="{{ .Paginator.Prev.URL | absURL }}">« {{ i18n "prev_page" | default "Prev" }}</a>
+    <a class="prev" href="{{ .Paginator.Prev.URL | absURL }}">« Prev</a>
     {{- end }}
     {{- if .Paginator.HasNext }}
-    <a class="next" href="{{ .Paginator.Next.URL | absURL }}">{{ i18n "next_page" | default "Next" }} »</a>
+    <a class="next" href="{{ .Paginator.Next.URL | absURL }}">Next »</a>
     {{- end }}
   </nav>
 </footer>
