@@ -84,10 +84,6 @@ menu:
       name: tags
       url: /tags/
       weight: 20
-    - identifier: test
-      name: test
-      url: /tags/
-      weight: 20
 
 pygmentsUseClasses: true
 
