@@ -10,7 +10,6 @@
   <h1>{{ .Title }}</h1>
 </header>
 
-{{/* 修正ポイント：$index を正しく定義し、内部でも $page を参照するように変更 */}}
 {{- $pages := .Paginator.Pages }}
 {{- range $index, $page := $pages }}
 <article class="post-entry" style="position: relative; height: auto !important; overflow: visible !important;">
@@ -23,7 +22,6 @@
     {{- if $page.Params.cover.image }}
       <div style="margin-bottom: 15px; position: relative; z-index: 2; display: block; aspect-ratio: 4 / 3; width: 100%; max-width: 400px; background-color: #f0f0f0; border-radius: 8px; overflow: hidden;">
         <a href="{{ $page.Permalink }}" style="display: block; width: 100%; height: 100%;">
-          {{/* 1枚目だけ fetchpriority="high" を適用 */}}
           <img src="{{ $page.Params.cover.image | absURL }}" 
                alt="{{ $page.Title }}" 
                {{ if eq $index 0 }}
@@ -55,7 +53,12 @@
     {{ $page.Date.Format "2006-01-02 15:04" }}
   </footer>
 
-  <a class="entry-link" href="{{ $page.Permalink }}" style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; z-index: 1;"></a>
+  {{/* --- 修正箇所：aria-label を付与して「名前」を教える --- */}}
+  <a class="entry-link" 
+     aria-label="{{ $page.Title }} の詳細を読む" 
+     href="{{ $page.Permalink }}" 
+     style="position: absolute; top: 0; left: 0; bottom: 0; right: 0; z-index: 1;">
+  </a>
 
 </article>
 {{- end }}
