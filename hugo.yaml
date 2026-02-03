@@ -21,21 +21,14 @@ minify:
   disableXML: true
   minifyOutput: true
 
-# テストサイト用設定++++++++++++++++++++++++++++++++
-# サイト全体の設定
-params:
-  # これを true にすると、トップページも含む全ページが noindex になります
-  robotsNoIndex: true
-# テストサイト用設定++++++++++++++++++++++++++++++++
-
 # --- 追加：投稿ページ（posts）を一括でnoindexにし、サイトマップから除外する ---
 cascade:
   - target:
       path: "/posts/**"   # content/posts 以下を指す
     sitemap:
       disable: true
-    # params:
-    #   robotsNoIndex: true
+    params:
+      robotsNoIndex: true
 
 params:
   env: production
@@ -56,6 +49,11 @@ params:
   ShowCodeCopyButtons: false
   ShowWordCount: false
   UseHugoToc: false
+
+  # テストサイト用設定++++++++++++++++++++++++++++++++
+  # これを true にすると、トップページも含む全ページが noindex になります
+  robotsNoIndex: true
+  # テストサイト用設定++++++++++++++++++++++++++++++++
 
   # --- 追加：サマリーでHTML（画像）をそのまま表示する設定 ---
   renderSummaryHTML: true
