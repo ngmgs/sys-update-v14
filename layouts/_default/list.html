@@ -22,10 +22,15 @@
     {{- if $page.Params.cover.image }}
       <div style="margin-bottom: 15px; position: relative; z-index: 2; display: block; aspect-ratio: 4 / 3; width: 100%; max-width: 400px; background-color: #f0f0f0; border-radius: 8px; overflow: hidden;">
         <a href="{{ $page.Permalink }}" style="display: block; width: 100%; height: 100%;">
-          <img src="{image_url}" alt="{price_int:,}" 
-            width="240" height="240" 
-            fetchpriority="high" 
-            style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #ddd;">
+          <img src="{{ $page.Params.cover.image | absURL }}" 
+               alt="{{ $page.Title }}" 
+               {{ if eq $index 0 }}
+                 fetchpriority="high"
+               {{ else }}
+                 loading="lazy"
+                 decoding="async"
+               {{ end }}
+               style="width: 100%; height: 100%; object-fit: cover;">
         </a>
       </div>
     {{- end }}
