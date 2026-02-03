@@ -28,7 +28,8 @@ window.addEventListener('load', () => {
     sentinel.style.cssText = 'text-align:center; padding:20px; color:#666; font-size:14px; display:none;';
     list.parentNode.insertBefore(sentinel, list.nextSibling);
 
-    fetch('../index.json')
+    // URLの末尾にビルド時のタイムスタンプ（Unix時間）を自動で挿入します
+    fetch('../index.json?v={{ now.Unix }}')
         .then(res => res.json())
         .then(data => {
             const cleanData = data.filter(item => item.title).sort((a, b) => {
