@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: sys-sync-unit
+  cancel-in-progress: true
+
 jobs:
   run-sync:
     runs-on: ubuntu-latest
