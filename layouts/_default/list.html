@@ -19,7 +19,8 @@
   <div class="entry-content" style="max-height: none !important; overflow: visible !important; display: block !important; -webkit-line-clamp: unset !important; line-clamp: unset !important;">
     {{- if .Params.cover.image }}
       <div style="margin-bottom: 15px; position: relative; z-index: 20; display: block; aspect-ratio: 4 / 3; width: 100%; max-width: 400px; background-color: #f0f0f0; border-radius: 8px; overflow: hidden;">
-        <a href="{{ .Permalink }}" style="display: block; width: 100%; height: 100%;">
+        {{/* 画像クリックもメルカリに飛ばす（またはブログ記事に飛ばすなら .Permalink に変更） */}}
+        <a href="{{ .Params.item_url | default .Permalink }}" target="_blank" rel="nofollow sponsored" style="display: block; width: 100%; height: 100%;">
           <img src="{{ .Params.cover.image | absURL }}" 
                alt="商品画像" 
                style="width: 100%; height: 100%; object-fit: cover;"
@@ -30,35 +31,39 @@
 
     <p style="overflow: visible !important; white-space: normal !important; display: block !important;">{{ .Description }}</p>
 
-    {{- if .Params.item_url }}
-      <div style="margin-top: 15px; position: relative; z-index: 20;">
-        <a href="{{ .Params.item_url }}" 
-           target="_blank" 
-           rel="nofollow sponsored noopener noreferrer" 
-           style="display: inline-block; background-color: #f0c14b; border: 1px solid #a88734; border-radius: 8px; padding: 8px 16px; text-decoration: none; color: #111; font-weight: bold;">
-          👉 メルカリで詳細を見る
-        </a>
-      </div>
-    {{- end }}
+    {{/* --- 修正：ここを「ブログの記事を開く」ボタンに変更 --- */}}
+    <div style="margin-top: 15px; position: relative; z-index: 20;">
+      <a href="{{ .Permalink }}" 
+         style="display: inline-block; background-color: #e0e0e0; border: 1px solid #ccc; border-radius: 8px; padding: 8px 16px; text-decoration: none; color: #333; font-weight: bold;">
+        📖 このページを詳しく見る
+      </a>
+    </div>
   </div>
 
   <footer class="entry-footer">
     {{ .Date.Format "2006-01-02 15:04" }}
   </footer>
 
-  <a class="entry-link" aria-label="post link to {{ .Title | plainify }}" href="{{ .Permalink }}" style="color: transparent !important; font-size: 0 !important;"></a>
+  {{/* --- 修正：記事全体（透明リンク）の飛び先を「メルカリ」に変更 --- */}}
+  <a class="entry-link" 
+     aria-label="メルカリで {{ .Title | plainify }} を見る" 
+     href="{{ .Params.item_url | default .Permalink }}" 
+     target="_blank" 
+     rel="nofollow sponsored noopener noreferrer"
+     style="color: transparent !important; font-size: 0 !important;">
+  </a>
 </article>
 {{- end }}
 
-{{/* --- PaperModデフォルトのページネーション構造を再現 --- */}}
+{{/* --- ページネーション --- */}}
 {{- if gt .Paginator.TotalPages 1 }}
 <footer class="page-footer">
   <nav class="pagination">
     {{- if .Paginator.HasPrev }}
-    <a class="prev" href="{{ .Paginator.Prev.URL | absURL }}">« {{ i18n "prev_page" | default "Prev" }}</a>
+    <a class="prev" href="{{ .Paginator.Prev.URL | absURL }}">« Prev</a>
     {{- end }}
     {{- if .Paginator.HasNext }}
-    <a class="next" href="{{ .Paginator.Next.URL | absURL }}">{{ i18n "next_page" | default "Next" }} »</a>
+    <a class="next" href="{{ .Paginator.Next.URL | absURL }}">Next »</a>
     {{- end }}
   </nav>
 </footer>
