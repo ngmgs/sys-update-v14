@@ -21,6 +21,13 @@ minify:
   disableXML: true
   minifyOutput: true
 
+# テストサイト用設定++++++++++++++++++++++++++++++++
+# サイト全体の設定
+params:
+  # これを true にすると、トップページも含む全ページが noindex になります
+  robotsNoIndex: true
+# テストサイト用設定++++++++++++++++++++++++++++++++
+
 # --- 追加：投稿ページ（posts）を一括でnoindexにし、サイトマップから除外する ---
 cascade:
   - target:
