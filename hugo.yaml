@@ -31,6 +31,11 @@ cascade:
       robotsNoIndex: true
 
 params:
+  # テストサイト用設定++++++++++++++++++++++++++++++++
+  # これを true にすると、トップページも含む全ページが noindex になります
+  robotsNoIndex: true
+  # テストサイト用設定++++++++++++++++++++++++++++++++
+  
   env: production
   title: "俺の爆速ブログ"
   description: "ブログ"
@@ -49,11 +54,6 @@ params:
   ShowCodeCopyButtons: false
   ShowWordCount: false
   UseHugoToc: false
-
-  # テストサイト用設定++++++++++++++++++++++++++++++++
-  # これを true にすると、トップページも含む全ページが noindex になります
-  robotsNoIndex: true
-  # テストサイト用設定++++++++++++++++++++++++++++++++
 
   # --- 追加：サマリーでHTML（画像）をそのまま表示する設定 ---
   renderSummaryHTML: true
