@@ -9,7 +9,6 @@ pagination:
 outputs:
   home:
     - HTML
-    - RSS
     - JSON
 
 enableRobotsTXT: false
