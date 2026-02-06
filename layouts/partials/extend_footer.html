@@ -10,12 +10,14 @@
         // 復元メイン処理
         const runRestore = async () => {
             const savedScroll = sessionStorage.getItem(keyScroll);
+            const savedPage = parseInt(sessionStorage.getItem(keyPage) || "1");
             if (!savedScroll) return;
 
             if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
             const searchList = document.getElementById('mySearchResults');
             if (searchList) {
+                // A. 検索ページ
                 let attempts = 0;
                 const checkSearch = setInterval(() => {
                     if (document.querySelectorAll('#mySearchResults li').length > 0 || attempts > 50) {
@@ -25,37 +27,49 @@
                     attempts++;
                 }, 100);
             } else {
-                const savedPage = parseInt(sessionStorage.getItem(keyPage) || "1");
+                // B. 通常の一覧ページ（一括Fetch）
                 if (savedPage > 1) {
                     const postContainer = document.querySelector('.main');
                     const parser = new DOMParser();
-                    console.log(`🔄 ブラウザバック復元: ${savedPage}ページ目まで一括読込中...`);
+                    console.log(`🔄 復元中: ${savedPage}ページ分を一括ロードします...`);
+
                     for (let i = 2; i <= savedPage; i++) {
                         try {
                             const res = await fetch(`${window.location.pathname}page/${i}/`);
                             if (!res.ok) break;
                             const doc = parser.parseFromString(await res.text(), 'text/html');
-                            doc.querySelectorAll('.post-entry').forEach(p => postContainer.appendChild(p));
+                            
+                            // 記事を追加
+                            const newPosts = doc.querySelectorAll('.post-entry');
+                            newPosts.forEach(p => postContainer.appendChild(p));
+
+                            // 【重要】「次へ」ボタンのHTMLを丸ごと差し替えて load-more.js に認識させる
+                            const oldPagination = document.querySelector('.pagination');
+                            const newPagination = doc.querySelector('.pagination');
+                            if (oldPagination && newPagination) {
+                                oldPagination.innerHTML = newPagination.innerHTML;
+                            }
                         } catch (e) { break; }
                     }
                 }
-                setTimeout(() => window.scrollTo(0, parseFloat(savedScroll)), 150);
+                // 読み込み完了後にスクロール（少し長めに待機して描画を安定させる）
+                setTimeout(() => {
+                    window.scrollTo({ top: parseFloat(savedScroll), behavior: 'instant' });
+                    console.log("📍 スクロール復元完了");
+                }, 200);
             }
         };
 
-        // ■ 判定と実行のコントロール
+        // ■ 判定と実行
         window.addEventListener('pageshow', (event) => {
             const nav = performance.getEntriesByType('navigation')[0];
             const isBackForward = (nav && nav.type === 'back_forward') || event.persisted;
 
             if (!isBackForward) {
-                // 通常遷移なら即座に消して終了
                 sessionStorage.removeItem(keyScroll);
                 sessionStorage.removeItem(keyPage);
                 sessionStorage.removeItem(keyCount);
-                console.log("🧹 通常遷移のためクリア（復元は行いません）");
             } else {
-                // ブラウザバックの時だけ、ここで復元をキックする
                 runRestore();
             }
         });
@@ -67,18 +81,21 @@
             scrollTimeout = setTimeout(() => {
                 if (window.scrollY > 100) {
                     sessionStorage.setItem(keyScroll, window.scrollY);
-                    const searchItems = document.querySelectorAll('#mySearchResults li');
-                    if (searchItems.length > 0) {
-                        sessionStorage.setItem(keyCount, searchItems.length);
-                    } else {
-                        const nextLink = document.querySelector('.pagination .next a');
-                        if (nextLink) {
-                            const match = nextLink.getAttribute('href').match(/page\/(\d+)/);
-                            if (match) sessionStorage.setItem(keyPage, parseInt(match[1]) - 1);
+                    
+                    // ページ数の判定：次のページの番号から現在のページ数を逆算
+                    const nextLink = document.querySelector('.pagination .next a');
+                    if (nextLink) {
+                        const match = nextLink.getAttribute('href').match(/page\/(\d+)/);
+                        if (match) {
+                            sessionStorage.setItem(keyPage, parseInt(match[1]) - 1);
                         }
+                    } else {
+                        // 次へボタンがない＝最終ページ
+                        const entries = document.querySelectorAll('.post-entry');
+                        if(entries.length > 10) sessionStorage.setItem(keyPage, Math.ceil(entries.length / 10));
                     }
                 }
-            }, 200);
+            }, 250);
         }, { passive: true });
     })();
 </script>
