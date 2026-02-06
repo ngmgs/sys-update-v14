@@ -1,3 +1,58 @@
 {{- if .IsNode -}}
 <script src="{{ "js/load-more.js" | absURL }}" defer></script>
+
+<script>
+    (function() {
+        const keyScroll = 'scroll-pos-' + window.location.pathname;
+        const keyCount = 'scroll-count-' + window.location.pathname; // 念のため件数キーも用意（拡張用）
+
+        // 1. 位置の保存（あなたのコードを参考に scroll イベントで確実に保存）
+        let scrollTimeout;
+        window.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                sessionStorage.setItem(keyScroll, window.scrollY);
+            }, 100); // 負荷軽減のためのデバウンス処理
+        }, { passive: true });
+
+        // 2. 復元処理
+        const restoreScroll = () => {
+            const scrollPos = sessionStorage.getItem(keyScroll);
+            if (!scrollPos) return;
+
+            const targetY = parseFloat(scrollPos);
+            
+            // ブラウザ標準の復元を無効化（二重動作防止）
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+
+            // 【あなたのコードのロジックを応用】
+            // ページの高さが足りるまで「待つ」リトライ処理
+            let attempts = 0;
+            const maxAttempts = 20; // 最大2秒くらい粘る
+            
+            const tryScroll = setInterval(() => {
+                // 現在のページ高さが、保存した位置より長ければジャンプ可能
+                if (document.body.scrollHeight >= targetY) {
+                    window.scrollTo(0, targetY);
+                    clearInterval(tryScroll);
+                } 
+                // もし「一番下」まで来ているなら、load-more.jsが動くのを待つために
+                // 一旦現在の一番下までスクロールして追加読み込みを誘発する手もあるが
+                // ここではシンプルにリトライのみ行う
+                
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    clearInterval(tryScroll); // 諦める
+                }
+            }, 100); // 0.1秒ごとにチェック
+        };
+
+        // DOM読み込み完了後、少し待ってから開始（あなたのsearch.htmlと同様のタイミング調整）
+        window.addEventListener('load', () => {
+            setTimeout(restoreScroll, 100);
+        });
+    })();
+</script>
 {{- end -}}
