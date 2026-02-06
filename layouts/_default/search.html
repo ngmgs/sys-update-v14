@@ -1,149 +1,69 @@
-{{- define "main" }}
-<header class="page-header">
-    <h1>{{ .Title }}</h1>
-</header>
-
-<div id="my-search-container">
-    <input id="mySearchInput" autofocus 
-           placeholder="{{ .Params.placeholder | default "検索キーワードを入力..." }}" 
-           aria-label="search" type="search" autocomplete="off" 
-           style="width: 100%; padding: 15px; font-size: 1.2rem; border-radius: 8px; border: 1px solid var(--border); background: var(--entry); color: var(--primary);">
-    <ul id="mySearchResults" style="list-style: none; padding: 0; margin-top: 20px;"></ul>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+{{- if .IsNode -}}
+<script src="{{ "js/load-more.js" | absURL }}" defer></script>
 
 <script>
-window.addEventListener('load', () => {
-    let fuse;
-    let allResults = [];
-    let currentDisplayCount = 10;
-    let isLoading = false;
-    let searchTimeout;
-    const input = document.getElementById('mySearchInput');
-    const list = document.getElementById('mySearchResults');
+    (function() {
+        const keyPrefix = 'hugo-scroll-' + window.location.pathname;
+        const keyContent = keyPrefix + '-content';
+        const keyPos = keyPrefix + '-pos';
+        const keyPage = keyPrefix + '-page';
 
-    const sentinel = document.createElement('div');
-    sentinel.id = 'search-sentinel';
-    sentinel.style.cssText = 'text-align:center; padding:20px; color:#666; font-size:14px; display:none;';
-    list.parentNode.insertBefore(sentinel, list.nextSibling);
-
-    // URLの末尾にビルド時のタイムスタンプ（Unix時間）を自動で挿入します
-    fetch('../index.json?v={{ now.Unix }}')
-        .then(res => res.json())
-        .then(data => {
-            const cleanData = data.filter(item => item.title).sort((a, b) => {
-                return new Date(b.date.replace(/-/g, '/')) - new Date(a.date.replace(/-/g, '/'));
-            });
-            fuse = new Fuse(cleanData, { 
-                keys: ['title', 'summary'], 
-                threshold: 0.1, 
-                shouldSort: false,
-                includeMatches: true 
-            });
-
-            // 【復元】URLとセッションストレージから状態を戻す
-            const params = new URLSearchParams(window.location.search);
-            const savedQuery = params.get('s');
-            if (savedQuery) {
-                input.value = savedQuery;
-                performSearch(savedQuery, false, true);
+        // ■ 1. 保存ロジック（記事をクリックした時に、その瞬間のHTMLを全部保存）
+        window.addEventListener('click', (e) => {
+            if (e.target.closest('.post-entry')) {
+                const postContainer = document.querySelector('.main');
+                const nextLink = document.querySelector('.pagination .next a');
+                
+                // 現在表示されている全記事のHTMLを保存
+                sessionStorage.setItem(keyContent, postContainer.innerHTML);
+                sessionStorage.setItem(keyPos, window.scrollY);
+                
+                // 次のページ番号を保存（load-more.jsとの同期用）
+                if (nextLink) {
+                    const match = nextLink.getAttribute('href').match(/page\/(\d+)/);
+                    if (match) sessionStorage.setItem(keyPage, match[1]);
+                }
             }
         });
 
-    function highlight(text, query) {
-        if (!query) return text;
-        const regex = new RegExp(`(${query})`, 'gi');
-        return text.replace(regex, '<mark style="background:none; color:#ffb300; font-weight:bold; padding:0;">$1</mark>');
-    }
-
-    function renderItem(result, query) {
-        const item = result.item;
-        return `
-            <li style="position: relative; margin-bottom: 20px; padding: 15px; background: var(--entry); border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center;">
-                ${item.image ? `<img src="${item.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-right: 15px;">` : ''}
-                <div>
-                    <h3 style="margin: 0 0 5px 0; font-size: 1.1rem;">${highlight(item.title, query)}</h3>
-                    <p style="margin: 0 0 5px 0; font-size: 0.75rem; color: var(--secondary); opacity: 0.8;">📅 ${item.date}</p>
-                    <p style="margin: 0; font-size: 0.85rem; color: var(--secondary);">${highlight(item.summary, query)}</p>
-                </div>
-                <a href="${item.permalink}" style="position: absolute; inset: 0; z-index: 1;"></a>
-            </li>
-        `;
-    }
-
-    function performSearch(query, updateUrl = true, isRestore = false) {
-        let displayLimit = 10;
-        
-        // スマホ対策：戻った時だけ、前回表示していた件数を一気に復元
-        if (isRestore) {
-            const savedCount = sessionStorage.getItem('search-count');
-            if (savedCount) displayLimit = parseInt(savedCount);
-        }
-
-        allResults = fuse.search(query);
-        currentDisplayCount = displayLimit;
-        list.innerHTML = allResults.slice(0, displayLimit).map(res => renderItem(res, query)).join('');
-        
-        sentinel.style.display = allResults.length > displayLimit ? 'block' : (allResults.length > 0 ? 'block' : 'none');
-        sentinel.textContent = allResults.length > displayLimit ? '読み込み中...' : (allResults.length > 0 ? 'すべての結果を表示しました' : '一致する結果がありません');
-
-        if (updateUrl) {
-            const newUrl = window.location.pathname + (query ? '?s=' + encodeURIComponent(query) : '');
-            window.history.replaceState(null, '', newUrl);
-        }
-
-        // スマホ対策：描画完了を待ってからスクロール位置を復元
-        if (isRestore) {
-            const scrollY = sessionStorage.getItem('search-scroll');
-            if (scrollY) {
-                // スマホのレンダリング時間を考慮して少し待機
-                setTimeout(() => window.scrollTo(0, parseInt(scrollY)), 100);
-            }
-        }
-    }
-
-    // スクロール位置と表示件数を保存
-    window.addEventListener('scroll', () => {
-        if (input.value.trim()) {
-            sessionStorage.setItem('search-scroll', window.scrollY);
-            sessionStorage.setItem('search-count', currentDisplayCount);
-        }
-    }, { passive: true });
-
-    input.addEventListener('input', () => {
-        clearTimeout(searchTimeout);
-        const query = input.value.trim();
-        if (!query) {
-            allResults = [];
-            list.innerHTML = '';
-            sentinel.style.display = 'none';
-            window.history.replaceState(null, '', window.location.pathname);
-            sessionStorage.removeItem('search-scroll');
-            sessionStorage.removeItem('search-count');
-            return;
-        }
-        searchTimeout = setTimeout(() => performSearch(query), 250);
-    });
-
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && allResults.length > currentDisplayCount && !isLoading) {
-            isLoading = true;
-            const start = currentDisplayCount;
-            currentDisplayCount += 10;
-            const query = input.value.trim();
-            const nextBatch = allResults.slice(start, currentDisplayCount);
+        // ■ 2. 復元ロジック
+        const restore = () => {
+            const savedContent = sessionStorage.getItem(keyContent);
+            const savedPos = sessionStorage.getItem(keyPos);
             
-            list.insertAdjacentHTML('beforeend', nextBatch.map(res => renderItem(res, query)).join(''));
-            
-            if (currentDisplayCount >= allResults.length) {
-                sentinel.textContent = 'すべての結果を表示しました';
-            }
-            isLoading = false;
-        }
-    }, { rootMargin: '200px' });
+            if (!savedContent || !savedPos) return;
 
-    observer.observe(sentinel);
-});
+            // ブラウザの自動スクロール復元を無効化
+            if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+            const postContainer = document.querySelector('.main');
+            if (postContainer) {
+                console.log("♻️ セッションから記事を復元中...");
+                // 保存しておいたHTMLを一気に流し込む（Fetch不要！）
+                postContainer.innerHTML = savedContent;
+
+                // スクロール位置を復元
+                setTimeout(() => {
+                    window.scrollTo({ top: parseFloat(savedPos), behavior: 'instant' });
+                    console.log("📍 位置復元完了");
+                }, 50);
+            }
+        };
+
+        // ■ 3. ページ表示時の判定
+        window.addEventListener('pageshow', (event) => {
+            const nav = performance.getEntriesByType('navigation')[0];
+            const isBackForward = (nav && nav.type === 'back_forward') || event.persisted;
+
+            if (isBackForward) {
+                restore();
+            } else {
+                // 通常遷移（ロゴクリック等）なら古いキャッシュを削除
+                sessionStorage.removeItem(keyContent);
+                sessionStorage.removeItem(keyPos);
+                sessionStorage.removeItem(keyPage);
+            }
+        });
+    })();
 </script>
-{{- end }}
+{{- end -}}
