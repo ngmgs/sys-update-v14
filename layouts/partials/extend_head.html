@@ -6,7 +6,6 @@
     
     console.log('[復元] スクリプト開始');
     
-    // 復元処理（DOMContentLoadedを待つ）
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
     const savedHTML = sessionStorage.getItem(STORAGE_KEY_HTML);
     
@@ -17,6 +16,9 @@
     }
     
     if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
+        // 復元フラグをセット（load-more.jsに伝える）
+        window.infiniteScrollRestoring = true;
+        
         document.addEventListener('DOMContentLoaded', () => {
             const main = document.querySelector('.main');
             
@@ -30,12 +32,16 @@
                     sessionStorage.removeItem(STORAGE_KEY_SCROLL);
                     sessionStorage.removeItem(STORAGE_KEY_HTML);
                     console.log('[復元] 完了');
+                    
+                    // 復元完了後、無限スクロールを再開
+                    setTimeout(() => {
+                        window.infiniteScrollRestoring = false;
+                    }, 500);
                 }, 100);
             }
         });
     }
     
-    // 保存処理
     function saveScrollState() {
         const scrollY = window.scrollY;
         const main = document.querySelector('.main');
