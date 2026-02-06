@@ -5,23 +5,11 @@
     const STORAGE_KEY_MAIN = 'infiniteScroll_main_' + location.pathname;
     const STORAGE_KEY_PAGINATION = 'infiniteScroll_pagination_' + location.pathname;
     
-    console.log('[復元] スクリプト開始');
-    
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
     const savedMain = sessionStorage.getItem(STORAGE_KEY_MAIN);
     const savedPagination = sessionStorage.getItem(STORAGE_KEY_PAGINATION);
     
-    if (savedScrollPos && savedMain) {
-        const savedSizeKB = (new Blob([savedMain]).size / 1024).toFixed(2);
-        console.log('[復元] 保存データあり');
-        console.log('[復元] 保存されたHTML容量:', savedSizeKB, 'KB');
-    }
-    
-    // ブラウザバックで戻ってきたかチェック
     const isBackNavigation = performance.getEntriesByType('navigation')[0]?.type === 'back_forward';
-    
-    console.log('[復元] ナビゲーションタイプ:', performance.getEntriesByType('navigation')[0]?.type);
-    console.log('[復元] ブラウザバック:', isBackNavigation);
     
     if (isBackNavigation && savedScrollPos && savedMain && parseInt(savedScrollPos) > 0) {
         document.addEventListener('DOMContentLoaded', () => {
@@ -29,28 +17,21 @@
             const pagination = document.querySelector('.pagination');
             
             if (main) {
-                console.log('[復元] mainを復元');
                 main.innerHTML = savedMain;
                 
                 if (pagination && savedPagination) {
-                    console.log('[復元] paginationを復元');
                     pagination.innerHTML = savedPagination;
-                    console.log('[復元] 復元後のnextLink:', pagination.querySelector('a.next')?.href);
                 }
                 
-                console.log('[復元] スクロール位置へ移動:', savedScrollPos);
                 setTimeout(() => {
                     window.scrollTo(0, parseInt(savedScrollPos));
                     sessionStorage.removeItem(STORAGE_KEY_SCROLL);
                     sessionStorage.removeItem(STORAGE_KEY_MAIN);
                     sessionStorage.removeItem(STORAGE_KEY_PAGINATION);
-                    console.log('[復元] 完了');
                 }, 100);
             }
         });
     } else if (!isBackNavigation) {
-        // 通常の遷移（リンククリック）の場合はキャッシュをクリア
-        console.log('[復元] 通常の遷移のためキャッシュクリア');
         sessionStorage.removeItem(STORAGE_KEY_SCROLL);
         sessionStorage.removeItem(STORAGE_KEY_MAIN);
         sessionStorage.removeItem(STORAGE_KEY_PAGINATION);
@@ -65,22 +46,11 @@
             const mainHTML = main.innerHTML;
             const paginationHTML = pagination ? pagination.innerHTML : '';
             
-            const mainSize = new Blob([mainHTML]).size;
-            const paginationSize = new Blob([paginationHTML]).size;
-            const totalSizeKB = ((mainSize + paginationSize) / 1024).toFixed(2);
-            
-            const nextLink = pagination?.querySelector('a.next');
-            const nextUrl = nextLink ? nextLink.href : 'なし';
-            
             sessionStorage.setItem(STORAGE_KEY_SCROLL, scrollY);
             sessionStorage.setItem(STORAGE_KEY_MAIN, mainHTML);
             if (paginationHTML) {
                 sessionStorage.setItem(STORAGE_KEY_PAGINATION, paginationHTML);
             }
-            
-            console.log('[保存] スクロール:', scrollY);
-            console.log('[保存] 次ページ:', nextUrl);
-            console.log('[保存] HTML容量:', totalSizeKB, 'KB');
         }
     }
     
