@@ -7,54 +7,12 @@
         const keyPage   = 'scroll-page-' + window.location.pathname;
         const keyCount  = 'search-count';
 
-        // ■ 0. 厳格なメモリリセット処理
-        // ページが表示されるたびに実行。ブラウザバック以外なら保存値を即削除。
-        window.addEventListener('pageshow', (event) => {
-            const nav = performance.getEntriesByType('navigation')[0];
-            const isBackForward = (nav && nav.type === 'back_forward') || event.persisted;
-
-            if (!isBackForward) {
-                sessionStorage.removeItem(keyScroll);
-                sessionStorage.removeItem(keyPage);
-                sessionStorage.removeItem(keyCount);
-                console.log("🧹 通常遷移のため、以前のスクロール位置をクリアしました");
-            }
-        });
-
-        // ■ 1. 保存処理
-        let scrollTimeout;
-        window.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                if (window.scrollY > 50) {
-                    sessionStorage.setItem(keyScroll, window.scrollY);
-                    
-                    const searchItems = document.querySelectorAll('#mySearchResults li');
-                    if (searchItems.length > 0) {
-                        sessionStorage.setItem(keyCount, searchItems.length);
-                    } else {
-                        const nextLink = document.querySelector('.pagination .next a');
-                        if (nextLink) {
-                            const match = nextLink.getAttribute('href').match(/page\/(\d+)/);
-                            if (match) sessionStorage.setItem(keyPage, parseInt(match[1]) - 1);
-                        } else {
-                            const entries = document.querySelectorAll('.post-entry');
-                            if(entries.length > 10) sessionStorage.setItem(keyPage, Math.ceil(entries.length / 10));
-                        }
-                    }
-                }
-            }, 150);
-        }, { passive: true });
-
-        // ■ 2. 復元処理
-        const restore = async () => {
-            // ここで値が消えていれば（通常遷移なら）何もしない
+        // 復元メイン処理
+        const runRestore = async () => {
             const savedScroll = sessionStorage.getItem(keyScroll);
             if (!savedScroll) return;
 
             if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-
-            console.log("🔄 ブラウザバックを検知: 復元を開始します...");
 
             const searchList = document.getElementById('mySearchResults');
             if (searchList) {
@@ -71,6 +29,7 @@
                 if (savedPage > 1) {
                     const postContainer = document.querySelector('.main');
                     const parser = new DOMParser();
+                    console.log(`🔄 ブラウザバック復元: ${savedPage}ページ目まで一括読込中...`);
                     for (let i = 2; i <= savedPage; i++) {
                         try {
                             const res = await fetch(`${window.location.pathname}page/${i}/`);
@@ -84,7 +43,43 @@
             }
         };
 
-        window.addEventListener('load', restore);
+        // ■ 判定と実行のコントロール
+        window.addEventListener('pageshow', (event) => {
+            const nav = performance.getEntriesByType('navigation')[0];
+            const isBackForward = (nav && nav.type === 'back_forward') || event.persisted;
+
+            if (!isBackForward) {
+                // 通常遷移なら即座に消して終了
+                sessionStorage.removeItem(keyScroll);
+                sessionStorage.removeItem(keyPage);
+                sessionStorage.removeItem(keyCount);
+                console.log("🧹 通常遷移のためクリア（復元は行いません）");
+            } else {
+                // ブラウザバックの時だけ、ここで復元をキックする
+                runRestore();
+            }
+        });
+
+        // ■ 保存処理
+        let scrollTimeout;
+        window.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                if (window.scrollY > 100) {
+                    sessionStorage.setItem(keyScroll, window.scrollY);
+                    const searchItems = document.querySelectorAll('#mySearchResults li');
+                    if (searchItems.length > 0) {
+                        sessionStorage.setItem(keyCount, searchItems.length);
+                    } else {
+                        const nextLink = document.querySelector('.pagination .next a');
+                        if (nextLink) {
+                            const match = nextLink.getAttribute('href').match(/page\/(\d+)/);
+                            if (match) sessionStorage.setItem(keyPage, parseInt(match[1]) - 1);
+                        }
+                    }
+                }
+            }, 200);
+        }, { passive: true });
     })();
 </script>
 {{- end -}}
