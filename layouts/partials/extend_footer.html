@@ -12,10 +12,25 @@
         const main = document.querySelector('.main');
         
         if (scrollY > 100 && main) {
-            sessionStorage.setItem(STORAGE_KEY_SCROLL, scrollY);
-            sessionStorage.setItem(STORAGE_KEY_HTML, main.innerHTML);
+            const htmlContent = main.innerHTML;
+            const htmlSize = new Blob([htmlContent]).size; // バイト数
+            const htmlSizeKB = (htmlSize / 1024).toFixed(2); // KB
             
-            console.log('[保存] スクロール:', scrollY, 'HTML保存完了');
+            sessionStorage.setItem(STORAGE_KEY_SCROLL, scrollY);
+            sessionStorage.setItem(STORAGE_KEY_HTML, htmlContent);
+            
+            // 全体のsessionStorage使用量も計算
+            let totalSize = 0;
+            for (let key in sessionStorage) {
+                if (sessionStorage.hasOwnProperty(key)) {
+                    totalSize += sessionStorage[key].length + key.length;
+                }
+            }
+            const totalSizeKB = (totalSize / 1024).toFixed(2);
+            
+            console.log('[保存] スクロール:', scrollY);
+            console.log('[保存] HTML容量:', htmlSizeKB, 'KB');
+            console.log('[保存] sessionStorage全体:', totalSizeKB, 'KB / 約5120 KB');
         }
     }
     
@@ -31,7 +46,11 @@
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
     const savedHTML = sessionStorage.getItem(STORAGE_KEY_HTML);
     
-    console.log('[復元] 保存データあり:', !!savedScrollPos, !!savedHTML);
+    if (savedScrollPos && savedHTML) {
+        const savedSizeKB = (new Blob([savedHTML]).size / 1024).toFixed(2);
+        console.log('[復元] 保存データあり');
+        console.log('[復元] 保存されたHTML容量:', savedSizeKB, 'KB');
+    }
     
     if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
         const main = document.querySelector('.main');
