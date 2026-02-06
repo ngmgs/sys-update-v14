@@ -2,53 +2,42 @@
 <script>
 (function() {
     const STORAGE_KEY_SCROLL = 'infiniteScroll_pos_' + location.pathname;
-    const STORAGE_KEY_HTML = 'infiniteScroll_html_' + location.pathname;
-    const STORAGE_KEY_NEXT = 'infiniteScroll_next_' + location.pathname;
+    const STORAGE_KEY_MAIN = 'infiniteScroll_main_' + location.pathname;
+    const STORAGE_KEY_PAGINATION = 'infiniteScroll_pagination_' + location.pathname;
     
     console.log('[復元] スクリプト開始');
     
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
-    const savedHTML = sessionStorage.getItem(STORAGE_KEY_HTML);
-    const savedNextLink = sessionStorage.getItem(STORAGE_KEY_NEXT);
+    const savedMain = sessionStorage.getItem(STORAGE_KEY_MAIN);
+    const savedPagination = sessionStorage.getItem(STORAGE_KEY_PAGINATION);
     
-    if (savedScrollPos && savedHTML) {
-        const savedSizeKB = (new Blob([savedHTML]).size / 1024).toFixed(2);
+    if (savedScrollPos && savedMain) {
+        const savedSizeKB = (new Blob([savedMain]).size / 1024).toFixed(2);
         console.log('[復元] 保存データあり');
         console.log('[復元] 保存されたHTML容量:', savedSizeKB, 'KB');
-        console.log('[復元] 保存された次ページURL:', savedNextLink);
     }
     
-    if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
+    if (savedScrollPos && savedMain && parseInt(savedScrollPos) > 0) {
         document.addEventListener('DOMContentLoaded', () => {
             const main = document.querySelector('.main');
             const pagination = document.querySelector('.pagination');
             
-            if (main && pagination) {
-                console.log('[復元] 復元前のnextLink:', pagination.querySelector('a.next')?.href);
+            if (main) {
+                console.log('[復元] mainを復元');
+                main.innerHTML = savedMain;
                 
-                console.log('[復元] HTMLを復元します');
-                main.innerHTML = savedHTML;
-                
-                console.log('[復元] 復元後のnextLink:', pagination.querySelector('a.next')?.href);
-                
-                // nextLinkを更新
-                if (savedNextLink) {
-                    const nextLink = pagination.querySelector('a.next');
-                    if (nextLink) {
-                        console.log('[復元] nextLinkを', nextLink.href, 'から', savedNextLink, 'に更新');
-                        nextLink.href = savedNextLink;
-                        console.log('[復元] 更新後:', pagination.querySelector('a.next')?.href);
-                    } else {
-                        console.log('[復元] nextLink要素が見つかりません');
-                    }
+                if (pagination && savedPagination) {
+                    console.log('[復元] paginationを復元');
+                    pagination.innerHTML = savedPagination;
+                    console.log('[復元] 復元後のnextLink:', pagination.querySelector('a.next')?.href);
                 }
                 
                 console.log('[復元] スクロール位置へ移動:', savedScrollPos);
                 setTimeout(() => {
                     window.scrollTo(0, parseInt(savedScrollPos));
                     sessionStorage.removeItem(STORAGE_KEY_SCROLL);
-                    sessionStorage.removeItem(STORAGE_KEY_HTML);
-                    sessionStorage.removeItem(STORAGE_KEY_NEXT);
+                    sessionStorage.removeItem(STORAGE_KEY_MAIN);
+                    sessionStorage.removeItem(STORAGE_KEY_PAGINATION);
                     console.log('[復元] 完了');
                 }, 100);
             }
@@ -58,33 +47,28 @@
     function saveScrollState() {
         const scrollY = window.scrollY;
         const main = document.querySelector('.main');
+        const pagination = document.querySelector('.pagination');
         
         if (scrollY > 100 && main) {
-            const htmlContent = main.innerHTML;
-            const htmlSize = new Blob([htmlContent]).size;
-            const htmlSizeKB = (htmlSize / 1024).toFixed(2);
+            const mainHTML = main.innerHTML;
+            const paginationHTML = pagination ? pagination.innerHTML : '';
             
-            const nextLink = document.querySelector('.pagination a.next');
-            const nextUrl = nextLink ? nextLink.href : null;
+            const mainSize = new Blob([mainHTML]).size;
+            const paginationSize = new Blob([paginationHTML]).size;
+            const totalSizeKB = ((mainSize + paginationSize) / 1024).toFixed(2);
+            
+            const nextLink = pagination?.querySelector('a.next');
+            const nextUrl = nextLink ? nextLink.href : 'なし';
             
             sessionStorage.setItem(STORAGE_KEY_SCROLL, scrollY);
-            sessionStorage.setItem(STORAGE_KEY_HTML, htmlContent);
-            if (nextUrl) {
-                sessionStorage.setItem(STORAGE_KEY_NEXT, nextUrl);
+            sessionStorage.setItem(STORAGE_KEY_MAIN, mainHTML);
+            if (paginationHTML) {
+                sessionStorage.setItem(STORAGE_KEY_PAGINATION, paginationHTML);
             }
-            
-            let totalSize = 0;
-            for (let key in sessionStorage) {
-                if (sessionStorage.hasOwnProperty(key)) {
-                    totalSize += sessionStorage[key].length + key.length;
-                }
-            }
-            const totalSizeKB = (totalSize / 1024).toFixed(2);
             
             console.log('[保存] スクロール:', scrollY);
             console.log('[保存] 次ページ:', nextUrl);
-            console.log('[保存] HTML容量:', htmlSizeKB, 'KB');
-            console.log('[保存] sessionStorage全体:', totalSizeKB, 'KB / 約5120 KB');
+            console.log('[保存] HTML容量:', totalSizeKB, 'KB');
         }
     }
     
