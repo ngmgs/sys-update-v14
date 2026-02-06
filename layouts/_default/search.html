@@ -45,9 +45,15 @@ window.addEventListener('load', () => {
             // 【復元】URLとセッションストレージから状態を戻す
             const params = new URLSearchParams(window.location.search);
             const savedQuery = params.get('s');
+            console.log('URLパラメータ s =', savedQuery);
+            console.log('sessionStorage search-count =', sessionStorage.getItem('search-count'));
+            console.log('sessionStorage search-scroll =', sessionStorage.getItem('search-scroll'));
+            
             if (savedQuery) {
                 input.value = savedQuery;
                 performSearch(savedQuery, false, true);
+            } else {
+                console.log('savedQueryがないため復元されませんでした');
             }
         });
 
