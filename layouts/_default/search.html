@@ -75,7 +75,6 @@ window.addEventListener('load', () => {
     function performSearch(query, updateUrl = true, isRestore = false) {
         let displayLimit = 10;
         
-        // スマホ対策：戻った時だけ、前回表示していた件数を一気に復元
         if (isRestore) {
             const savedCount = sessionStorage.getItem('search-count');
             if (savedCount) displayLimit = parseInt(savedCount);
@@ -93,12 +92,17 @@ window.addEventListener('load', () => {
             window.history.replaceState(null, '', newUrl);
         }
 
-        // スマホ対策：描画完了を待ってからスクロール位置を復元
+        // 修正：スクロール復元を requestAnimationFrame + setTimeout で確実に待つ
         if (isRestore) {
             const scrollY = sessionStorage.getItem('search-scroll');
             if (scrollY) {
-                // スマホのレンダリング時間を考慮して少し待機
-                setTimeout(() => window.scrollTo(0, parseInt(scrollY)), 100);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            window.scrollTo(0, parseInt(scrollY));
+                        }, 150);
+                    });
+                });
             }
         }
     }
