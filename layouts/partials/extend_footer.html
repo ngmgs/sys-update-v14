@@ -5,21 +5,49 @@
     const STORAGE_KEY_SCROLL = 'infiniteScroll_pos_' + location.pathname;
     const STORAGE_KEY_HTML = 'infiniteScroll_html_' + location.pathname;
     
-    console.log('[復元] スクリプト開始');
+    // 復元処理を最優先で実行（DOMContentLoadedを待たない）
+    const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
+    const savedHTML = sessionStorage.getItem(STORAGE_KEY_HTML);
     
+    if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
+        // できるだけ早く復元
+        const restoreImmediately = () => {
+            const main = document.querySelector('.main');
+            if (main) {
+                console.log('[復元] 即座に復元');
+                main.innerHTML = savedHTML;
+                
+                // スクロールも即座に
+                requestAnimationFrame(() => {
+                    window.scrollTo(0, parseInt(savedScrollPos));
+                    sessionStorage.removeItem(STORAGE_KEY_SCROLL);
+                    sessionStorage.removeItem(STORAGE_KEY_HTML);
+                    console.log('[復元] 完了');
+                });
+            }
+        };
+        
+        // DOMがあればすぐ実行、なければ待つ
+        if (document.querySelector('.main')) {
+            restoreImmediately();
+        } else {
+            document.addEventListener('DOMContentLoaded', restoreImmediately);
+        }
+    }
+    
+    // 保存処理
     function saveScrollState() {
         const scrollY = window.scrollY;
         const main = document.querySelector('.main');
         
         if (scrollY > 100 && main) {
             const htmlContent = main.innerHTML;
-            const htmlSize = new Blob([htmlContent]).size; // バイト数
-            const htmlSizeKB = (htmlSize / 1024).toFixed(2); // KB
+            const htmlSize = new Blob([htmlContent]).size;
+            const htmlSizeKB = (htmlSize / 1024).toFixed(2);
             
             sessionStorage.setItem(STORAGE_KEY_SCROLL, scrollY);
             sessionStorage.setItem(STORAGE_KEY_HTML, htmlContent);
             
-            // 全体のsessionStorage使用量も計算
             let totalSize = 0;
             for (let key in sessionStorage) {
                 if (sessionStorage.hasOwnProperty(key)) {
@@ -41,33 +69,6 @@
             saveScrollState();
         }
     });
-
-    // 復元処理
-    const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
-    const savedHTML = sessionStorage.getItem(STORAGE_KEY_HTML);
-    
-    if (savedScrollPos && savedHTML) {
-        const savedSizeKB = (new Blob([savedHTML]).size / 1024).toFixed(2);
-        console.log('[復元] 保存データあり');
-        console.log('[復元] 保存されたHTML容量:', savedSizeKB, 'KB');
-    }
-    
-    if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
-        const main = document.querySelector('.main');
-        
-        if (main) {
-            console.log('[復元] HTMLを復元します');
-            main.innerHTML = savedHTML;
-            
-            console.log('[復元] スクロール位置へ移動:', savedScrollPos);
-            setTimeout(() => {
-                window.scrollTo(0, parseInt(savedScrollPos));
-                sessionStorage.removeItem(STORAGE_KEY_SCROLL);
-                sessionStorage.removeItem(STORAGE_KEY_HTML);
-                console.log('[復元] 完了');
-            }, 100);
-        }
-    }
 })();
 </script>
 {{- end -}}
