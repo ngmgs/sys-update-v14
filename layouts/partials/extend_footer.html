@@ -1,3 +1,29 @@
 {{- if .IsNode -}}
 <script src="{{ "js/load-more.js" | absURL }}" defer></script>
+
+<script>
+    // スクロール位置の復元
+    (function() {
+        const getStorageKey = () => 'scroll-pos-' + window.location.pathname;
+
+        // 1. ページを離れる（記事へ飛ぶ）直前に現在の位置を記録
+        window.addEventListener('beforeunload', () => {
+            sessionStorage.setItem(getStorageKey(), window.scrollY);
+        });
+
+        // 2. ページが読み込まれた時に以前の位置へジャンプ
+        window.addEventListener('load', () => { // DOMContentLoadedより確実なloadを使用
+            const scrollPos = sessionStorage.getItem(getStorageKey());
+            if (scrollPos) {
+                // load-more.jsの動作や画像の読み込みを待つため、少しだけ遅延させる
+                setTimeout(() => {
+                    window.scrollTo({
+                        top: parseFloat(scrollPos),
+                        behavior: 'instant'
+                    });
+                }, 100); 
+            }
+        });
+    })();
+</script>
 {{- end -}}
