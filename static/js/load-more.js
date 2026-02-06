@@ -1,21 +1,4 @@
 document.addEventListener("DOMContentLoaded", function() {
-    // 復元中は無限スクロールを起動しない
-    if (window.infiniteScrollRestoring) {
-        console.log('[無限スクロール] 復元中のため待機');
-        const checkRestore = setInterval(() => {
-            if (!window.infiniteScrollRestoring) {
-                clearInterval(checkRestore);
-                console.log('[無限スクロール] 復元完了、再開');
-                initInfiniteScroll();
-            }
-        }, 100);
-        return;
-    }
-    
-    initInfiniteScroll();
-});
-
-function initInfiniteScroll() {
     let nextLink = document.querySelector('.pagination a.next');
     const pagination = document.querySelector('.pagination');
     const main = document.querySelector('.main');
@@ -58,6 +41,14 @@ function initInfiniteScroll() {
                 const newNextLink = doc.querySelector('.pagination a.next');
                 if (newNextLink) {
                     nextLink = newNextLink;
+                    
+                    // DOMのpaginationも更新（重要！）
+                    const currentPaginationLink = document.querySelector('.pagination a.next');
+                    if (currentPaginationLink) {
+                        currentPaginationLink.href = newNextLink.href;
+                        console.log('[load-more] DOM上のnextLinkを更新:', newNextLink.href);
+                    }
+                    
                     isLoading = false;
                 } else {
                     nextLink = null;
@@ -71,4 +62,4 @@ function initInfiniteScroll() {
                 isLoading = false;
             });
     }
-}
+});
