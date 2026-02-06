@@ -100,4 +100,10 @@
         setTimeout(() => {
             window.scrollTo(0, pos);
             sessionStorage.removeItem('scrollPos_' + location.pathname);
-            se
+            sessionStorage.removeItem('nextLink_' + location.pathname);
+            console.log('[復元] 完了');
+        }, 100);
+    }
+})();
+</script>
+{{- end -}}
