@@ -42,11 +42,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (newNextLink) {
                     nextLink = newNextLink;
                     
-                    // DOMのpaginationも更新（重要！）
-                    const currentPaginationLink = document.querySelector('.pagination a.next');
-                    if (currentPaginationLink) {
-                        currentPaginationLink.href = newNextLink.href;
-                        console.log('[load-more] DOM上のnextLinkを更新:', newNextLink.href);
+                    // DOMのpaginationも更新
+                    const currentPagination = document.querySelector('.pagination a.next');
+                    if (currentPagination) {
+                        currentPagination.href = newNextLink.href;
+                        console.log('[load-more] nextLink更新:', newNextLink.href);
                     }
                     
                     isLoading = false;
