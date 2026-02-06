@@ -4,14 +4,23 @@
 <script>
     (function() {
         const keyScroll = 'scroll-pos-' + window.location.pathname;
-        const keyItemIdx = 'item-idx-' + window.location.pathname; // 賢いポイント：何番目の記事か
+        const keyItemIdx = 'item-idx-' + window.location.pathname;
 
-        // ■ 1. 保存処理（記事クリック時に「何番目か」を記録）
+        // ■ 1. 保存処理（クリック時にログを出す）
         window.addEventListener('click', (e) => {
             const entry = e.target.closest('.post-entry');
             if (entry) {
                 const allEntries = Array.from(document.querySelectorAll('.post-entry'));
                 const idx = allEntries.indexOf(entry);
+                
+                // --- デバッグログ ---
+                console.log("-----------------------------------");
+                console.log("📝 記事がクリックされました");
+                console.log("記事のインデックス:", idx, "(上から何番目か。0から開始)");
+                console.log("必要と推測されるページ数:", Math.floor(idx / 10) + 1);
+                console.log("現在のスクロール位置:", window.scrollY);
+                console.log("-----------------------------------");
+                
                 sessionStorage.setItem(keyItemIdx, idx);
                 sessionStorage.setItem(keyScroll, window.scrollY);
             }
@@ -22,52 +31,64 @@
             const savedIdx = parseInt(sessionStorage.getItem(keyItemIdx));
             const savedScroll = sessionStorage.getItem(keyScroll);
             
-            // ブラウザバック判定（前回のロジックを継続）
-            const nav = performance.getEntriesByType('navigation')[0];
-            const isBackForward = (nav && nav.type === 'back_forward');
-            if (!isBackForward || isNaN(savedIdx)) {
-                // 通常遷移ならゴミを消して終了
-                ['scroll-pos-', 'item-idx-'].forEach(k => sessionStorage.removeItem(k + window.location.pathname));
+            if (isNaN(savedIdx)) {
+                console.log("ℹ️ 復元用データがないため、何もしません。");
                 return;
             }
 
+            console.log("🔄 ブラウザバック復元を開始します。目標インデックス:", savedIdx);
+
             if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
-            // 必要なページ数を計算（1ページ10件想定）
             const neededPages = Math.floor(savedIdx / 10) + 1;
             
             if (neededPages > 1) {
                 const postContainer = document.querySelector('.main');
                 const parser = new DOMParser();
-                
-                // 賢いポイント：Promise.all で全ページを「同時並列」でFetch（超高速）
                 const requests = [];
+
                 for (let i = 2; i <= neededPages; i++) {
                     requests.push(fetch(`${window.location.pathname}page/${i}/`).then(r => r.text()));
                 }
 
                 console.log(`🚀 ${neededPages}ページ分を並列ロード中...`);
-                const htmls = await Promise.all(requests);
-
-                htmls.forEach(html => {
-                    const doc = parser.parseFromString(html, 'text/html');
-                    doc.querySelectorAll('.post-entry').forEach(p => postContainer.appendChild(p));
-                    
-                    // 次へボタンも常に最新に更新
-                    const newPagination = doc.querySelector('.pagination');
-                    if (newPagination) document.querySelector('.pagination').innerHTML = newPagination.innerHTML;
-                });
+                try {
+                    const htmls = await Promise.all(requests);
+                    htmls.forEach((html, i) => {
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newPosts = doc.querySelectorAll('.post-entry');
+                        newPosts.forEach(p => postContainer.appendChild(p));
+                        console.log(`✅ page/${i + 2} の追加完了（記事数: ${newPosts.length}）`);
+                        
+                        const newPagination = doc.querySelector('.pagination');
+                        if (newPagination) {
+                            document.querySelector('.pagination').innerHTML = newPagination.innerHTML;
+                        }
+                    });
+                } catch (err) {
+                    console.error("❌ 復元ロード中にエラー発生:", err);
+                }
             }
 
-            // 描画完了を待ってジャンプ
             setTimeout(() => {
                 window.scrollTo({ top: parseFloat(savedScroll), behavior: 'instant' });
-            }, 100);
+                console.log("📍 スクロール復元完了！ 位置:", savedScroll);
+            }, 150);
         };
 
         window.addEventListener('pageshow', (e) => {
-            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+            const nav = performance.getEntriesByType('navigation')[0];
+            const isBackForward = (nav && nav.type === 'back_forward') || e.persisted;
+
+            if (isBackForward) {
                 restore();
+            } else {
+                // 通常遷移時はログを出して消去
+                if (sessionStorage.getItem(keyItemIdx)) {
+                    console.log("🧹 通常遷移を検知。古いデータを破棄しました。");
+                    sessionStorage.removeItem(keyItemIdx);
+                    sessionStorage.removeItem(keyScroll);
+                }
             }
         });
     })();
