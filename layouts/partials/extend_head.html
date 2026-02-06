@@ -3,22 +3,22 @@
 (function() {
     const STORAGE_KEY_SCROLL = 'infiniteScroll_pos_' + location.pathname;
     const STORAGE_KEY_HTML = 'infiniteScroll_html_' + location.pathname;
+    const STORAGE_KEY_NEXT = 'infiniteScroll_next_' + location.pathname;
     
     console.log('[復元] スクリプト開始');
     
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
     const savedHTML = sessionStorage.getItem(STORAGE_KEY_HTML);
+    const savedNextLink = sessionStorage.getItem(STORAGE_KEY_NEXT);
     
     if (savedScrollPos && savedHTML) {
         const savedSizeKB = (new Blob([savedHTML]).size / 1024).toFixed(2);
         console.log('[復元] 保存データあり');
         console.log('[復元] 保存されたHTML容量:', savedSizeKB, 'KB');
+        console.log('[復元] 次ページURL:', savedNextLink);
     }
     
     if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
-        // 復元フラグをセット（load-more.jsに伝える）
-        window.infiniteScrollRestoring = true;
-        
         document.addEventListener('DOMContentLoaded', () => {
             const main = document.querySelector('.main');
             
@@ -26,17 +26,25 @@
                 console.log('[復元] HTMLを復元します');
                 main.innerHTML = savedHTML;
                 
+                // 復元したHTMLの中のnextLinkを正しいURLに更新
+                if (savedNextLink) {
+                    const pagination = document.querySelector('.pagination');
+                    if (pagination) {
+                        const nextLink = pagination.querySelector('a.next');
+                        if (nextLink) {
+                            nextLink.href = savedNextLink;
+                            console.log('[復元] nextLinkを更新:', savedNextLink);
+                        }
+                    }
+                }
+                
                 console.log('[復元] スクロール位置へ移動:', savedScrollPos);
                 setTimeout(() => {
                     window.scrollTo(0, parseInt(savedScrollPos));
                     sessionStorage.removeItem(STORAGE_KEY_SCROLL);
                     sessionStorage.removeItem(STORAGE_KEY_HTML);
+                    sessionStorage.removeItem(STORAGE_KEY_NEXT);
                     console.log('[復元] 完了');
-                    
-                    // 復元完了後、無限スクロールを再開
-                    setTimeout(() => {
-                        window.infiniteScrollRestoring = false;
-                    }, 500);
                 }, 100);
             }
         });
@@ -51,8 +59,15 @@
             const htmlSize = new Blob([htmlContent]).size;
             const htmlSizeKB = (htmlSize / 1024).toFixed(2);
             
+            // 次のページURLも保存
+            const nextLink = document.querySelector('.pagination a.next');
+            const nextUrl = nextLink ? nextLink.href : null;
+            
             sessionStorage.setItem(STORAGE_KEY_SCROLL, scrollY);
             sessionStorage.setItem(STORAGE_KEY_HTML, htmlContent);
+            if (nextUrl) {
+                sessionStorage.setItem(STORAGE_KEY_NEXT, nextUrl);
+            }
             
             let totalSize = 0;
             for (let key in sessionStorage) {
@@ -63,6 +78,7 @@
             const totalSizeKB = (totalSize / 1024).toFixed(2);
             
             console.log('[保存] スクロール:', scrollY);
+            console.log('[保存] 次ページ:', nextUrl);
             console.log('[保存] HTML容量:', htmlSizeKB, 'KB');
             console.log('[保存] sessionStorage全体:', totalSizeKB, 'KB / 約5120 KB');
         }
