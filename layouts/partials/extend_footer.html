@@ -5,29 +5,38 @@
     const STORAGE_KEY_SCROLL = 'infiniteScroll_pos_' + location.pathname;
     const STORAGE_KEY_HTML = 'infiniteScroll_html_' + location.pathname;
     
-    // 復元処理を最優先で実行（DOMContentLoadedを待たない）
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
     const savedHTML = sessionStorage.getItem(STORAGE_KEY_HTML);
     
     if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
-        // できるだけ早く復元
+        // 復元中は一瞬だけ隠す
+        const style = document.createElement('style');
+        style.id = 'restore-hide';
+        style.textContent = '.main { opacity: 0 !important; }';
+        document.head.appendChild(style);
+        
         const restoreImmediately = () => {
             const main = document.querySelector('.main');
             if (main) {
-                console.log('[復元] 即座に復元');
+                console.log('[復元] 復元開始');
                 main.innerHTML = savedHTML;
                 
-                // スクロールも即座に
                 requestAnimationFrame(() => {
                     window.scrollTo(0, parseInt(savedScrollPos));
-                    sessionStorage.removeItem(STORAGE_KEY_SCROLL);
-                    sessionStorage.removeItem(STORAGE_KEY_HTML);
-                    console.log('[復元] 完了');
+                    
+                    // 復元完了後に表示
+                    requestAnimationFrame(() => {
+                        const hideStyle = document.getElementById('restore-hide');
+                        if (hideStyle) hideStyle.remove();
+                        
+                        sessionStorage.removeItem(STORAGE_KEY_SCROLL);
+                        sessionStorage.removeItem(STORAGE_KEY_HTML);
+                        console.log('[復元] 完了');
+                    });
                 });
             }
         };
         
-        // DOMがあればすぐ実行、なければ待つ
         if (document.querySelector('.main')) {
             restoreImmediately();
         } else {
