@@ -4,99 +4,72 @@
 <script>
     (function() {
         const keyScroll = 'scroll-pos-' + window.location.pathname;
-        const keyPage   = 'scroll-page-' + window.location.pathname;
-        const keyCount  = 'search-count';
+        const keyItemIdx = 'item-idx-' + window.location.pathname; // 賢いポイント：何番目の記事か
 
-        // 復元メイン処理
-        const runRestore = async () => {
-            const savedScroll = sessionStorage.getItem(keyScroll);
-            const savedPage = parseInt(sessionStorage.getItem(keyPage) || "1");
-            if (!savedScroll) return;
-
-            if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-
-            const searchList = document.getElementById('mySearchResults');
-            if (searchList) {
-                // A. 検索ページ
-                let attempts = 0;
-                const checkSearch = setInterval(() => {
-                    if (document.querySelectorAll('#mySearchResults li').length > 0 || attempts > 50) {
-                        clearInterval(checkSearch);
-                        setTimeout(() => window.scrollTo(0, parseFloat(savedScroll)), 100);
-                    }
-                    attempts++;
-                }, 100);
-            } else {
-                // B. 通常の一覧ページ（一括Fetch）
-                if (savedPage > 1) {
-                    const postContainer = document.querySelector('.main');
-                    const parser = new DOMParser();
-                    console.log(`🔄 復元中: ${savedPage}ページ分を一括ロードします...`);
-
-                    for (let i = 2; i <= savedPage; i++) {
-                        try {
-                            const res = await fetch(`${window.location.pathname}page/${i}/`);
-                            if (!res.ok) break;
-                            const doc = parser.parseFromString(await res.text(), 'text/html');
-                            
-                            // 記事を追加
-                            const newPosts = doc.querySelectorAll('.post-entry');
-                            newPosts.forEach(p => postContainer.appendChild(p));
-
-                            // 【重要】「次へ」ボタンのHTMLを丸ごと差し替えて load-more.js に認識させる
-                            const oldPagination = document.querySelector('.pagination');
-                            const newPagination = doc.querySelector('.pagination');
-                            if (oldPagination && newPagination) {
-                                oldPagination.innerHTML = newPagination.innerHTML;
-                            }
-                        } catch (e) { break; }
-                    }
-                }
-                // 読み込み完了後にスクロール（少し長めに待機して描画を安定させる）
-                setTimeout(() => {
-                    window.scrollTo({ top: parseFloat(savedScroll), behavior: 'instant' });
-                    console.log("📍 スクロール復元完了");
-                }, 200);
-            }
-        };
-
-        // ■ 判定と実行
-        window.addEventListener('pageshow', (event) => {
-            const nav = performance.getEntriesByType('navigation')[0];
-            const isBackForward = (nav && nav.type === 'back_forward') || event.persisted;
-
-            if (!isBackForward) {
-                sessionStorage.removeItem(keyScroll);
-                sessionStorage.removeItem(keyPage);
-                sessionStorage.removeItem(keyCount);
-            } else {
-                runRestore();
+        // ■ 1. 保存処理（記事クリック時に「何番目か」を記録）
+        window.addEventListener('click', (e) => {
+            const entry = e.target.closest('.post-entry');
+            if (entry) {
+                const allEntries = Array.from(document.querySelectorAll('.post-entry'));
+                const idx = allEntries.indexOf(entry);
+                sessionStorage.setItem(keyItemIdx, idx);
+                sessionStorage.setItem(keyScroll, window.scrollY);
             }
         });
 
-        // ■ 保存処理
-        let scrollTimeout;
-        window.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                if (window.scrollY > 100) {
-                    sessionStorage.setItem(keyScroll, window.scrollY);
-                    
-                    // ページ数の判定：次のページの番号から現在のページ数を逆算
-                    const nextLink = document.querySelector('.pagination .next a');
-                    if (nextLink) {
-                        const match = nextLink.getAttribute('href').match(/page\/(\d+)/);
-                        if (match) {
-                            sessionStorage.setItem(keyPage, parseInt(match[1]) - 1);
-                        }
-                    } else {
-                        // 次へボタンがない＝最終ページ
-                        const entries = document.querySelectorAll('.post-entry');
-                        if(entries.length > 10) sessionStorage.setItem(keyPage, Math.ceil(entries.length / 10));
-                    }
+        // ■ 2. 復元処理
+        const restore = async () => {
+            const savedIdx = parseInt(sessionStorage.getItem(keyItemIdx));
+            const savedScroll = sessionStorage.getItem(keyScroll);
+            
+            // ブラウザバック判定（前回のロジックを継続）
+            const nav = performance.getEntriesByType('navigation')[0];
+            const isBackForward = (nav && nav.type === 'back_forward');
+            if (!isBackForward || isNaN(savedIdx)) {
+                // 通常遷移ならゴミを消して終了
+                ['scroll-pos-', 'item-idx-'].forEach(k => sessionStorage.removeItem(k + window.location.pathname));
+                return;
+            }
+
+            if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+            // 必要なページ数を計算（1ページ10件想定）
+            const neededPages = Math.floor(savedIdx / 10) + 1;
+            
+            if (neededPages > 1) {
+                const postContainer = document.querySelector('.main');
+                const parser = new DOMParser();
+                
+                // 賢いポイント：Promise.all で全ページを「同時並列」でFetch（超高速）
+                const requests = [];
+                for (let i = 2; i <= neededPages; i++) {
+                    requests.push(fetch(`${window.location.pathname}page/${i}/`).then(r => r.text()));
                 }
-            }, 250);
-        }, { passive: true });
+
+                console.log(`🚀 ${neededPages}ページ分を並列ロード中...`);
+                const htmls = await Promise.all(requests);
+
+                htmls.forEach(html => {
+                    const doc = parser.parseFromString(html, 'text/html');
+                    doc.querySelectorAll('.post-entry').forEach(p => postContainer.appendChild(p));
+                    
+                    // 次へボタンも常に最新に更新
+                    const newPagination = doc.querySelector('.pagination');
+                    if (newPagination) document.querySelector('.pagination').innerHTML = newPagination.innerHTML;
+                });
+            }
+
+            // 描画完了を待ってジャンプ
+            setTimeout(() => {
+                window.scrollTo({ top: parseFloat(savedScroll), behavior: 'instant' });
+            }, 100);
+        };
+
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') {
+                restore();
+            }
+        });
     })();
 </script>
 {{- end -}}
