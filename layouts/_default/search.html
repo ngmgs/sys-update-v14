@@ -84,6 +84,10 @@ window.addEventListener('load', () => {
         currentDisplayCount = displayLimit;
         list.innerHTML = allResults.slice(0, currentDisplayCount).map(res => renderItem(res, query)).join('');
         
+        console.log('復元後のli要素数:', list.querySelectorAll('li').length);
+        console.log('currentDisplayCount:', currentDisplayCount);
+        console.log('リストの高さ:', list.scrollHeight);
+        
         sentinel.style.display = allResults.length > currentDisplayCount ? 'block' : (allResults.length > 0 ? 'block' : 'none');
         sentinel.textContent = allResults.length > currentDisplayCount ? '読み込み中...' : (allResults.length > 0 ? 'すべての結果を表示しました' : '一致する結果がありません');
 
@@ -94,16 +98,12 @@ window.addEventListener('load', () => {
 
         if (isRestore) {
             const scrollY = sessionStorage.getItem('search-scroll');
+            console.log('復元予定のスクロール位置:', scrollY);
             if (scrollY) {
-                // 画像読み込みを待たず、DOMの高さ計算だけ待つ
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         window.scrollTo(0, parseInt(scrollY));
-                        
-                        // スクロール後に微調整（画像読み込み完了後）
-                        setTimeout(() => {
-                            window.scrollTo(0, parseInt(scrollY));
-                        }, 300);
+                        console.log('実際のスクロール位置:', window.scrollY);
                     });
                 });
             }
