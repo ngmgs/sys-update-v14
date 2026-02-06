@@ -14,7 +14,8 @@
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 
 <script>
-window.addEventListener('load', () => {
+// loadイベントではなく即座に実行
+(function() {
     let fuse;
     let allResults = [];
     let currentDisplayCount = 10;
@@ -28,7 +29,6 @@ window.addEventListener('load', () => {
     sentinel.style.cssText = 'text-align:center; padding:20px; color:#666; font-size:14px; display:none;';
     list.parentNode.insertBefore(sentinel, list.nextSibling);
 
-    // URLの末尾にビルド時のタイムスタンプ（Unix時間）を自動で挿入します
     fetch('../index.json?v={{ now.Unix }}')
         .then(res => res.json())
         .then(data => {
