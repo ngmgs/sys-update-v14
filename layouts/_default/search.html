@@ -75,6 +75,7 @@ window.addEventListener('load', () => {
     function performSearch(query, updateUrl = true, isRestore = false) {
         let displayLimit = 10;
         
+        
         if (isRestore) {
             const savedCount = sessionStorage.getItem('search-count');
             if (savedCount) displayLimit = parseInt(savedCount);
