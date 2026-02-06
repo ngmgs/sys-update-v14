@@ -17,10 +17,11 @@
             sessionStorage.setItem(STORAGE_KEY_SCROLL, scrollY);
             sessionStorage.setItem(STORAGE_KEY_COUNT, postCount);
             
-            console.log('[保存成功] スクロール:', scrollY, '記事数:', postCount);
+            console.log('[保存] スクロール:', scrollY, '記事数:', postCount);
         }
     }
     
+    // ページを離れるときだけ保存
     window.addEventListener('beforeunload', saveScrollState);
     window.addEventListener('pagehide', saveScrollState);
     window.addEventListener('visibilitychange', () => {
@@ -28,8 +29,6 @@
             saveScrollState();
         }
     });
-    
-    let saveInterval = setInterval(saveScrollState, 3000);
 
     // 復元処理
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
@@ -38,8 +37,6 @@
     console.log('[復元] 保存データ - スクロール:', savedScrollPos, '記事数:', savedCount);
     
     if (savedScrollPos && parseInt(savedScrollPos) > 0 && savedCount) {
-        clearInterval(saveInterval);
-        
         const waitForLoadMore = setInterval(() => {
             const main = document.querySelector('.main');
             const sentinel = document.querySelector('.infinite-scroll-sentinel');
@@ -102,7 +99,6 @@
                     console.log('[復元] 読み込み後の記事数:', updatedCount);
                     
                     if (updatedCount < targetCount && newNextLink) {
-                        // まだ足りない場合は続けて読み込む
                         setTimeout(() => restoreByCount(targetCount, targetScroll), 100);
                     } else {
                         console.log('[復元] 目標記事数到達');
@@ -126,7 +122,6 @@
             sessionStorage.removeItem(STORAGE_KEY_SCROLL);
             sessionStorage.removeItem(STORAGE_KEY_COUNT);
             console.log('[復元] 完了');
-            saveInterval = setInterval(saveScrollState, 3000);
         }, 300);
     }
 })();
