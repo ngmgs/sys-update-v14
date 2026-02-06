@@ -82,8 +82,6 @@ window.addEventListener('load', () => {
 
         allResults = fuse.search(query);
         currentDisplayCount = displayLimit;
-        
-        // 修正：復元時は displayLimit 件数分すべて挿入
         list.innerHTML = allResults.slice(0, currentDisplayCount).map(res => renderItem(res, query)).join('');
         
         sentinel.style.display = allResults.length > currentDisplayCount ? 'block' : (allResults.length > 0 ? 'block' : 'none');
@@ -113,12 +111,18 @@ window.addEventListener('load', () => {
                     
                     images.forEach(img => {
                         if (img.complete) {
-                            restoreScroll();
+                            loadedCount++;
                         } else {
                             img.addEventListener('load', restoreScroll);
                             img.addEventListener('error', restoreScroll);
                         }
                     });
+                    
+                    if (loadedCount === totalImages) {
+                        requestAnimationFrame(() => {
+                            window.scrollTo(0, parseInt(scrollY));
+                        });
+                    }
                 } else {
                     requestAnimationFrame(() => {
                         window.scrollTo(0, parseInt(scrollY));
