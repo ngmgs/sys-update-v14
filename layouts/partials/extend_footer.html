@@ -3,43 +3,22 @@
 <script>
 (function() {
     const STORAGE_KEY_SCROLL = 'infiniteScroll_pos_' + location.pathname;
-    const STORAGE_KEY_LOADED = 'infiniteScroll_loaded_' + location.pathname;
+    const STORAGE_KEY_COUNT = 'infiniteScroll_count_' + location.pathname;
     
     console.log('[復元] スクリプト開始');
     
     function saveScrollState() {
         const scrollY = window.scrollY;
-        const nextLink = document.querySelector('.pagination a.next');
+        const main = document.querySelector('.main');
         
-        if (scrollY > 100) {
+        if (scrollY > 100 && main) {
+            const postCount = main.querySelectorAll('.post-entry').length;
+            
             sessionStorage.setItem(STORAGE_KEY_SCROLL, scrollY);
+            sessionStorage.setItem(STORAGE_KEY_COUNT, postCount);
             
-            // 読み込み済みの最大ページ番号を計算
-            // 次が page/2 なら、現在 page/1 まで表示済み
-            // 次が page/3 なら、現在 page/2 まで表示済み
-            const currentPage = getCurrentPageNumber();
-            let loadedUpTo = currentPage;
-            
-            // 記事コンテナ内の全記事数から推測する方法もあるが、
-            // nextLinkから逆算する方が確実
-            if (nextLink) {
-                const nextPageNum = getPageNumber(nextLink.href);
-                loadedUpTo = nextPageNum - 1; // 次が2なら、1まで読み込み済み
-            }
-            
-            sessionStorage.setItem(STORAGE_KEY_LOADED, loadedUpTo);
-            console.log('[保存成功] スクロール:', scrollY, '読み込み済み:', loadedUpTo, '次:', nextLink ? nextLink.href : 'なし');
+            console.log('[保存成功] スクロール:', scrollY, '記事数:', postCount);
         }
-    }
-    
-    function getCurrentPageNumber() {
-        const match = location.pathname.match(/\/page\/(\d+)/);
-        return match ? parseInt(match[1]) : 1;
-    }
-    
-    function getPageNumber(url) {
-        const match = url.match(/\/page\/(\d+)/);
-        return match ? parseInt(match[1]) : 2; // デフォルトは2（トップページの次）
     }
     
     window.addEventListener('beforeunload', saveScrollState);
@@ -54,52 +33,54 @@
 
     // 復元処理
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
-    const savedLoadedPage = sessionStorage.getItem(STORAGE_KEY_LOADED);
+    const savedCount = sessionStorage.getItem(STORAGE_KEY_COUNT);
     
-    console.log('[復元] 保存データ - スクロール:', savedScrollPos, '読み込み済みページ:', savedLoadedPage);
+    console.log('[復元] 保存データ - スクロール:', savedScrollPos, '記事数:', savedCount);
     
-    if (savedScrollPos && parseInt(savedScrollPos) > 0 && savedLoadedPage) {
-        const currentPage = getCurrentPageNumber();
-        const targetPage = parseInt(savedLoadedPage);
+    if (savedScrollPos && parseInt(savedScrollPos) > 0 && savedCount) {
+        clearInterval(saveInterval);
         
-        console.log('[復元] 現在ページ:', currentPage, '目標ページ:', targetPage);
-        
-        if (targetPage > currentPage) {
-            console.log('[復元] ページ', currentPage, 'から', targetPage, 'まで読み込みが必要');
-            clearInterval(saveInterval);
+        const waitForLoadMore = setInterval(() => {
+            const main = document.querySelector('.main');
+            const sentinel = document.querySelector('.infinite-scroll-sentinel');
             
-            const waitForLoadMore = setInterval(() => {
-                const main = document.querySelector('.main');
-                const sentinel = document.querySelector('.infinite-scroll-sentinel');
+            if (main && sentinel) {
+                clearInterval(waitForLoadMore);
                 
-                if (main && sentinel) {
-                    clearInterval(waitForLoadMore);
-                    console.log('[復元] 準備完了、復元開始');
-                    restorePages(currentPage, targetPage, parseInt(savedScrollPos));
+                const currentCount = main.querySelectorAll('.post-entry').length;
+                const targetCount = parseInt(savedCount);
+                
+                console.log('[復元] 現在の記事数:', currentCount, '目標記事数:', targetCount);
+                
+                if (targetCount > currentCount) {
+                    console.log('[復元] 記事を追加読み込みします');
+                    restoreByCount(targetCount, parseInt(savedScrollPos));
+                } else {
+                    console.log('[復元] 追加読み込み不要、スクロールのみ');
+                    scrollToPosition(parseInt(savedScrollPos));
                 }
-            }, 100);
-        } else {
-            console.log('[復元] 追加読み込み不要、スクロールのみ');
-            setTimeout(() => scrollToPosition(parseInt(savedScrollPos)), 500);
-        }
+            }
+        }, 100);
     }
 
-    function restorePages(currentPage, targetPage, targetScroll) {
+    function restoreByCount(targetCount, targetScroll) {
         const main = document.querySelector('.main');
         const pagination = document.querySelector('.pagination');
         const currentNextLink = pagination ? pagination.querySelector('a.next') : null;
         
-        console.log('[復元] restorePages - 現在:', currentPage, '目標:', targetPage);
+        const currentCount = main.querySelectorAll('.post-entry').length;
+        
+        console.log('[復元] 現在:', currentCount, '記事 / 目標:', targetCount, '記事');
         
         if (!main || !currentNextLink) {
-            console.log('[復元] 要素なし、スクロールへ');
+            console.log('[復元] これ以上読み込めません');
             scrollToPosition(targetScroll);
             return;
         }
         
-        if (currentPage < targetPage) {
+        if (currentCount < targetCount) {
             const nextUrl = currentNextLink.href;
-            console.log('[復元] 読み込み中:', nextUrl);
+            console.log('[復元] 次ページ読み込み:', nextUrl);
             
             fetch(nextUrl)
                 .then(response => response.text())
@@ -117,13 +98,14 @@
                         currentNextLink.href = newNextLink.href;
                     }
                     
-                    const loadedPage = currentPage + 1;
-                    console.log('[復元] ページ', loadedPage, '読み込み完了');
+                    const updatedCount = main.querySelectorAll('.post-entry').length;
+                    console.log('[復元] 読み込み後の記事数:', updatedCount);
                     
-                    if (loadedPage < targetPage) {
-                        setTimeout(() => restorePages(loadedPage, targetPage, targetScroll), 100);
+                    if (updatedCount < targetCount && newNextLink) {
+                        // まだ足りない場合は続けて読み込む
+                        setTimeout(() => restoreByCount(targetCount, targetScroll), 100);
                     } else {
-                        console.log('[復元] 全ページ読み込み完了');
+                        console.log('[復元] 目標記事数到達');
                         scrollToPosition(targetScroll);
                     }
                 })
@@ -132,6 +114,7 @@
                     scrollToPosition(targetScroll);
                 });
         } else {
+            console.log('[復元] 既に目標記事数に到達');
             scrollToPosition(targetScroll);
         }
     }
@@ -141,8 +124,8 @@
         setTimeout(() => {
             window.scrollTo(0, pos);
             sessionStorage.removeItem(STORAGE_KEY_SCROLL);
-            sessionStorage.removeItem(STORAGE_KEY_LOADED);
-            console.log('[復元] 完了、sessionStorage削除');
+            sessionStorage.removeItem(STORAGE_KEY_COUNT);
+            console.log('[復元] 完了');
             saveInterval = setInterval(saveScrollState, 3000);
         }, 300);
     }
