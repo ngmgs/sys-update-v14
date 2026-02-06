@@ -28,6 +28,7 @@ window.addEventListener('load', () => {
     sentinel.style.cssText = 'text-align:center; padding:20px; color:#666; font-size:14px; display:none;';
     list.parentNode.insertBefore(sentinel, list.nextSibling);
 
+    // URLの末尾にビルド時のタイムスタンプ（Unix時間）を自動で挿入します
     fetch('../index.json?v={{ now.Unix }}')
         .then(res => res.json())
         .then(data => {
@@ -41,6 +42,7 @@ window.addEventListener('load', () => {
                 includeMatches: true 
             });
 
+            // 【復元】URLとセッションストレージから状態を戻す
             const params = new URLSearchParams(window.location.search);
             const savedQuery = params.get('s');
             if (savedQuery) {
@@ -73,6 +75,7 @@ window.addEventListener('load', () => {
     function performSearch(query, updateUrl = true, isRestore = false) {
         let displayLimit = 10;
         
+        // スマホ対策：戻った時だけ、前回表示していた件数を一気に復元
         if (isRestore) {
             const savedCount = sessionStorage.getItem('search-count');
             if (savedCount) displayLimit = parseInt(savedCount);
@@ -83,12 +86,30 @@ window.addEventListener('load', () => {
         list.innerHTML = allResults.slice(0, displayLimit).map(res => renderItem(res, query)).join('');
         
         sentinel.style.display = allResults.length > displayLimit ? 'block' : (allResults.length > 0 ? 'block' : 'none');
+        sentinel.textContent = allResults.length > displayLimit ? '読み込み中...' : (allResults.length > 0 ? 'すべての結果を表示しました' : '一致する結果がありません');
 
         if (updateUrl) {
             const newUrl = window.location.pathname + (query ? '?s=' + encodeURIComponent(query) : '');
             window.history.replaceState(null, '', newUrl);
         }
+
+        // スマホ対策：描画完了を待ってからスクロール位置を復元
+        if (isRestore) {
+            const scrollY = sessionStorage.getItem('search-scroll');
+            if (scrollY) {
+                // スマホのレンダリング時間を考慮して少し待機
+                setTimeout(() => window.scrollTo(0, parseInt(scrollY)), 100);
+            }
+        }
     }
+
+    // スクロール位置と表示件数を保存
+    window.addEventListener('scroll', () => {
+        if (input.value.trim()) {
+            sessionStorage.setItem('search-scroll', window.scrollY);
+            sessionStorage.setItem('search-count', currentDisplayCount);
+        }
+    }, { passive: true });
 
     input.addEventListener('input', () => {
         clearTimeout(searchTimeout);
@@ -98,6 +119,8 @@ window.addEventListener('load', () => {
             list.innerHTML = '';
             sentinel.style.display = 'none';
             window.history.replaceState(null, '', window.location.pathname);
+            sessionStorage.removeItem('search-scroll');
+            sessionStorage.removeItem('search-count');
             return;
         }
         searchTimeout = setTimeout(() => performSearch(query), 250);
@@ -110,7 +133,12 @@ window.addEventListener('load', () => {
             currentDisplayCount += 10;
             const query = input.value.trim();
             const nextBatch = allResults.slice(start, currentDisplayCount);
+            
             list.insertAdjacentHTML('beforeend', nextBatch.map(res => renderItem(res, query)).join(''));
+            
+            if (currentDisplayCount >= allResults.length) {
+                sentinel.textContent = 'すべての結果を表示しました';
+            }
             isLoading = false;
         }
     }, { rootMargin: '200px' });
