@@ -42,9 +42,26 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (newNextLink) {
                     nextLink = newNextLink;
                     
+                    console.log('[load-more] 新しいnextLink取得:', newNextLink.href);
+                    
+                    // paginationを一時的に表示して更新
+                    const paginationElement = document.querySelector('.pagination');
+                    if (paginationElement) {
+                        paginationElement.style.display = 'block'; // 一時的に表示
+                    }
+                    
                     const currentPaginationLink = document.querySelector('.pagination a.next');
+                    console.log('[load-more] 現在のDOM上のnextLink:', currentPaginationLink?.href);
+                    
                     if (currentPaginationLink) {
                         currentPaginationLink.href = newNextLink.href;
+                        console.log('[load-more] DOM上のnextLinkを更新:', newNextLink.href);
+                    } else {
+                        console.log('[load-more] DOM上のnextLinkが見つかりません！');
+                    }
+                    
+                    if (paginationElement) {
+                        paginationElement.style.display = 'none'; // 再度非表示
                     }
                     
                     isLoading = false;
