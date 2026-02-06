@@ -5,9 +5,9 @@
     (function() {
         const keyScroll = 'scroll-pos-' + window.location.pathname;
         const keyItemIdx = 'item-idx-' + window.location.pathname;
-        const ITEMS_PER_PAGE = 10; // ここを実際の1ページ件数に合わせてください
+        const ITEMS_PER_PAGE = 10; // 1ページあたりの件数
 
-        // 保存処理
+        // 1. 保存：クリックされた記事の番号と位置を記録
         window.addEventListener('click', (e) => {
             const entry = e.target.closest('.post-entry');
             if (entry) {
@@ -17,61 +17,66 @@
             }
         });
 
+        // 2. 復元メインロジック
         const restore = async () => {
             const savedIdx = parseInt(sessionStorage.getItem(keyItemIdx));
             const savedScroll = sessionStorage.getItem(keyScroll);
-            if (isNaN(savedIdx)) return;
+            if (isNaN(savedIdx) || !savedScroll) return;
 
             const neededPages = Math.floor(savedIdx / ITEMS_PER_PAGE) + 1;
-            if (neededPages <= 1) return; // 1ページ目なら何もしない
+            if (neededPages <= 1) return; // 1ページ目なら標準機能に任せる
 
             if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
             const postContainer = document.querySelector('.main');
+            if (!postContainer) return;
+
+            // ★ むちゃくちゃにならないためのポイント
+            // 一旦、中身（1ページ目の内容など）を全部消して「真っ白」にする
+            postContainer.innerHTML = '';
+            
             const parser = new DOMParser();
+            console.log(`🛠 1ページから${neededPages}ページまでを順番に再構築中...`);
 
-            console.log(`🛠 復元中... ターゲット: ${savedIdx}番目 (計${neededPages}ページ)`);
-
-            // 賢いポイント：2ページ目以降「だけ」を順番に取ってきて後ろに繋げる
-            // 1ページ目は既に表示されているので fetch しない（重複防止）
-            for (let i = 2; i <= neededPages; i++) {
+            // 1ページ目から必要なページまで順番に取得して追加していく
+            for (let i = 1; i <= neededPages; i++) {
                 try {
-                    const res = await fetch(`${window.location.pathname}page/${i}/`);
+                    const url = i === 1 ? window.location.pathname : `${window.location.pathname}page/${i}/`;
+                    const res = await fetch(url);
                     if (!res.ok) break;
                     
                     const html = await res.text();
                     const doc = parser.parseFromString(html, 'text/html');
                     const newPosts = doc.querySelectorAll('.post-entry');
                     
-                    // 既に追加されていないかチェックしながら結合
-                    newPosts.forEach(p => {
-                        // 重複チェック（同じリンクの記事があれば飛ばす）
-                        const link = p.querySelector('a')?.href;
-                        if (link && !postContainer.querySelector(`a[href="${link}"]`)) {
-                            postContainer.appendChild(p);
-                        }
-                    });
+                    newPosts.forEach(p => postContainer.appendChild(p.cloneNode(true)));
 
-                    // Paginationの更新（load-more.jsの続きのため）
+                    // Pagination（次へボタン）を最新ページのものに更新
                     const newPagination = doc.querySelector('.pagination');
                     if (newPagination) {
                         const currentPagination = document.querySelector('.pagination');
                         if (currentPagination) currentPagination.innerHTML = newPagination.innerHTML;
                     }
-                    console.log(`✅ page/${i} を結合しました`);
-                } catch (err) { break; }
+                } catch (err) {
+                    console.error("ページ取得エラー:", err);
+                    break;
+                }
             }
 
-            // スクロール実行
+            // 3. 全ての結合が終わってからスクロール
             setTimeout(() => {
                 window.scrollTo({ top: parseFloat(savedScroll), behavior: 'instant' });
+                console.log("📍 復元完了");
             }, 100);
         };
 
+        // 4. 実行タイミングの制御
         window.addEventListener('pageshow', (e) => {
             const isBack = e.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward';
-            if (isBack) restore();
-            else {
+            if (isBack) {
+                restore();
+            } else {
+                // 通常遷移時は古いデータを削除
                 sessionStorage.removeItem(keyItemIdx);
                 sessionStorage.removeItem(keyScroll);
             }
