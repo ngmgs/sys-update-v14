@@ -4,54 +4,88 @@
 <script>
     (function() {
         const keyScroll = 'scroll-pos-' + window.location.pathname;
-        const keyCount = 'scroll-count-' + window.location.pathname; // 念のため件数キーも用意（拡張用）
+        const keyPage   = 'scroll-page-' + window.location.pathname;
 
-        // 1. 位置の保存（あなたのコードを参考に scroll イベントで確実に保存）
-        let scrollTimeout;
-        window.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                sessionStorage.setItem(keyScroll, window.scrollY);
-            }, 100); // 負荷軽減のためのデバウンス処理
-        }, { passive: true });
-
-        // 2. 復元処理
-        const restoreScroll = () => {
-            const scrollPos = sessionStorage.getItem(keyScroll);
-            if (!scrollPos) return;
-
-            const targetY = parseFloat(scrollPos);
+        // ■ 1. 状態の保存（ページを離れる時）
+        // 現在「何ページ目まで読み込んでいるか」を、次へボタンのリンクから推測して保存します
+        window.addEventListener('beforeunload', () => {
+            const nextLink = document.querySelector('.pagination .next a');
+            let currentPage = 1;
             
-            // ブラウザ標準の復元を無効化（二重動作防止）
+            if (nextLink) {
+                // 次のリンクが /page/5/ なら、現在は 4ページ目まで表示されていると判断
+                const match = nextLink.getAttribute('href').match(/page\/(\d+)/);
+                if (match) {
+                    currentPage = parseInt(match[1]) - 1;
+                }
+            } else {
+                // 次へボタンがない＝最後のページまで読み込んでいる場合
+                // DOMの記事数を数えるなど簡易的な判定、もしくは「十分大きい数」として扱う
+                const entries = document.querySelectorAll('.post-entry'); // PaperModの記事クラス
+                if(entries.length > 10) currentPage = Math.ceil(entries.length / 10); // 1ページ10件と仮定
+            }
+
+            if (window.scrollY > 100) {
+                sessionStorage.setItem(keyScroll, window.scrollY);
+                sessionStorage.setItem(keyPage, currentPage);
+            }
+        });
+
+        // ■ 2. 状態の復元（戻ってきた時）
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedScroll = sessionStorage.getItem(keyScroll);
+            const savedPage   = parseInt(sessionStorage.getItem(keyPage) || "1");
+
+            if (!savedScroll || savedPage <= 1) return;
+
+            // ブラウザ標準の復元を停止
             if ('scrollRestoration' in history) {
                 history.scrollRestoration = 'manual';
             }
 
-            // 【あなたのコードのロジックを応用】
-            // ページの高さが足りるまで「待つ」リトライ処理
-            let attempts = 0;
-            const maxAttempts = 20; // 最大2秒くらい粘る
+            // ★ここが search.html と同じロジックです★
+            // 必要なページ数まで、裏側で一気にデータを取ってきて結合します
+            console.log(`♻️ 復元開始: ${savedPage}ページ目まで一括読み込み中...`);
             
-            const tryScroll = setInterval(() => {
-                // 現在のページ高さが、保存した位置より長ければジャンプ可能
-                if (document.body.scrollHeight >= targetY) {
-                    window.scrollTo(0, targetY);
-                    clearInterval(tryScroll);
-                } 
-                // もし「一番下」まで来ているなら、load-more.jsが動くのを待つために
-                // 一旦現在の一番下までスクロールして追加読み込みを誘発する手もあるが
-                // ここではシンプルにリトライのみ行う
-                
-                attempts++;
-                if (attempts >= maxAttempts) {
-                    clearInterval(tryScroll); // 諦める
-                }
-            }, 100); // 0.1秒ごとにチェック
-        };
+            const postContainer = document.querySelector('.main'); // 記事を追加する親要素
+            const parser = new DOMParser();
 
-        // DOM読み込み完了後、少し待ってから開始（あなたのsearch.htmlと同様のタイミング調整）
-        window.addEventListener('load', () => {
-            setTimeout(restoreScroll, 100);
+            // 2ページ目から保存されたページ数まで順番にFetch
+            for (let i = 2; i <= savedPage; i++) {
+                try {
+                    const url = `${window.location.pathname}page/${i}/`;
+                    const response = await fetch(url);
+                    const html = await response.text();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // 記事部分を取得して現在のページに追加
+                    const newPosts = doc.querySelectorAll('.post-entry'); // PaperModの記事クラス
+                    newPosts.forEach(post => {
+                        postContainer.appendChild(post);
+                    });
+
+                    // 「次へ」ボタンのリンクも更新（load-more.js がバグらないように）
+                    const currentPagination = document.querySelector('.pagination');
+                    const newPagination = doc.querySelector('.pagination');
+                    if (currentPagination && newPagination) {
+                        currentPagination.innerHTML = newPagination.innerHTML;
+                    }
+
+                } catch (e) {
+                    console.error("復元読み込みエラー:", e);
+                    break; 
+                }
+            }
+
+            // 読み込み終わったら、一瞬でスクロール位置を復元
+            // 画像の読み込みズレを防ぐため、わずかに待機
+            setTimeout(() => {
+                window.scrollTo({
+                    top: parseFloat(savedScroll),
+                    behavior: 'instant'
+                });
+                console.log("📍 位置復元完了");
+            }, 100);
         });
     })();
 </script>
