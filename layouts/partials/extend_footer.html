@@ -7,25 +7,33 @@
     
     console.log('[復元] スクリプト開始');
     
-    // ページ離脱時に保存（pagehideの方が確実）
-    let hasUnloaded = false;
-    window.addEventListener('pagehide', () => {
-        if (hasUnloaded) return;
-        hasUnloaded = true;
-        
+    // 保存関数
+    function saveScrollState() {
         const scrollY = window.scrollY;
         const nextLink = document.querySelector('.pagination a.next');
         
-        console.log('[保存] スクロール位置:', scrollY);
-        console.log('[保存] 次ページ:', nextLink ? nextLink.href : 'なし');
+        console.log('[保存試行] スクロール:', scrollY, '次ページ:', nextLink ? nextLink.href : 'なし');
         
-        if (scrollY > 0) {  // スクロールしている場合のみ保存
+        if (scrollY > 100) {  // 少しスクロールしている場合のみ
             sessionStorage.setItem(STORAGE_KEY_SCROLL, scrollY);
             if (nextLink) {
                 sessionStorage.setItem(STORAGE_KEY_NEXT, nextLink.href);
             }
+            console.log('[保存成功] sessionStorageに保存しました');
+        }
+    }
+    
+    // 複数のイベントで保存を試みる
+    window.addEventListener('beforeunload', saveScrollState);
+    window.addEventListener('pagehide', saveScrollState);
+    window.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            saveScrollState();
         }
     });
+    
+    // 定期的に保存（念のため）
+    let saveInterval = setInterval(saveScrollState, 2000);
 
     // 復元処理
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
@@ -36,8 +44,8 @@
     
     if (savedScrollPos && parseInt(savedScrollPos) > 0 && savedNextLink) {
         console.log('[復元] 復元開始');
+        clearInterval(saveInterval); // 復元中は定期保存停止
         
-        // load-more.jsの実行を待つ
         const waitForLoadMore = setInterval(() => {
             const main = document.querySelector('.main');
             const sentinel = document.querySelector('.infinite-scroll-sentinel');
@@ -51,22 +59,21 @@
     }
 
     function restoreState(targetUrl, targetScroll) {
-        console.log('[復元] restoreState呼び出し');
+        console.log('[復元] restoreState呼び出し、目標:', targetUrl);
         const main = document.querySelector('.main');
         const pagination = document.querySelector('.pagination');
         let currentNextLink = pagination ? pagination.querySelector('a.next') : null;
         
-        console.log('[復元] 現在URL:', currentNextLink ? currentNextLink.href : 'なし');
-        console.log('[復元] 目標URL:', targetUrl);
+        console.log('[復元] 現在nextLink:', currentNextLink ? currentNextLink.href : 'なし');
         
         if (!main || !currentNextLink) {
-            console.log('[復元] 要素なし、スクロールのみ');
+            console.log('[復元] 要素なし、スクロールのみ実行');
             scrollToPosition(targetScroll);
             return;
         }
 
         if (currentNextLink.href !== targetUrl) {
-            console.log('[復元] ページ読み込み:', currentNextLink.href);
+            console.log('[復元] ページ読み込み開始:', currentNextLink.href);
             
             fetch(currentNextLink.href)
                 .then(response => response.text())
@@ -83,31 +90,31 @@
                     if (newNextLink && currentNextLink) {
                         currentNextLink.href = newNextLink.href;
                         console.log('[復元] nextLink更新:', newNextLink.href);
-                        
-                        // 少し待ってから次へ
                         setTimeout(() => restoreState(targetUrl, targetScroll), 100);
                     } else {
-                        console.log('[復元] 最後のページ');
+                        console.log('[復元] 最終ページ到達');
                         scrollToPosition(targetScroll);
                     }
                 })
                 .catch(err => {
-                    console.error('[復元] エラー:', err);
+                    console.error('[復元] fetch失敗:', err);
                     scrollToPosition(targetScroll);
                 });
         } else {
-            console.log('[復元] 目標到達');
+            console.log('[復元] 目標URL到達、スクロール実行');
             scrollToPosition(targetScroll);
         }
     }
 
     function scrollToPosition(pos) {
-        console.log('[復元] スクロール実行:', pos);
+        console.log('[復元] スクロール位置設定:', pos);
         setTimeout(() => {
             window.scrollTo(0, pos);
             sessionStorage.removeItem(STORAGE_KEY_SCROLL);
             sessionStorage.removeItem(STORAGE_KEY_NEXT);
-            console.log('[復元] 完了、sessionStorage削除');
+            console.log('[復元] 完了');
+            // 復元完了後、定期保存再開
+            saveInterval = setInterval(saveScrollState, 2000);
         }, 300);
     }
 })();
