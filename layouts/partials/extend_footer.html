@@ -5,42 +5,32 @@
     const STORAGE_KEY_SCROLL = 'infiniteScroll_pos_' + location.pathname;
     const STORAGE_KEY_HTML = 'infiniteScroll_html_' + location.pathname;
     
+    console.log('[復元] スクリプト開始');
+    
+    // 復元処理
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
     const savedHTML = sessionStorage.getItem(STORAGE_KEY_HTML);
     
+    if (savedScrollPos && savedHTML) {
+        const savedSizeKB = (new Blob([savedHTML]).size / 1024).toFixed(2);
+        console.log('[復元] 保存データあり');
+        console.log('[復元] 保存されたHTML容量:', savedSizeKB, 'KB');
+    }
+    
     if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
-        // 復元中は一瞬だけ隠す
-        const style = document.createElement('style');
-        style.id = 'restore-hide';
-        style.textContent = '.main { opacity: 0 !important; }';
-        document.head.appendChild(style);
+        const main = document.querySelector('.main');
         
-        const restoreImmediately = () => {
-            const main = document.querySelector('.main');
-            if (main) {
-                console.log('[復元] 復元開始');
-                main.innerHTML = savedHTML;
-                
-                requestAnimationFrame(() => {
-                    window.scrollTo(0, parseInt(savedScrollPos));
-                    
-                    // 復元完了後に表示
-                    requestAnimationFrame(() => {
-                        const hideStyle = document.getElementById('restore-hide');
-                        if (hideStyle) hideStyle.remove();
-                        
-                        sessionStorage.removeItem(STORAGE_KEY_SCROLL);
-                        sessionStorage.removeItem(STORAGE_KEY_HTML);
-                        console.log('[復元] 完了');
-                    });
-                });
-            }
-        };
-        
-        if (document.querySelector('.main')) {
-            restoreImmediately();
-        } else {
-            document.addEventListener('DOMContentLoaded', restoreImmediately);
+        if (main) {
+            console.log('[復元] HTMLを復元します');
+            main.innerHTML = savedHTML;
+            
+            console.log('[復元] スクロール位置へ移動:', savedScrollPos);
+            setTimeout(() => {
+                window.scrollTo(0, parseInt(savedScrollPos));
+                sessionStorage.removeItem(STORAGE_KEY_SCROLL);
+                sessionStorage.removeItem(STORAGE_KEY_HTML);
+                console.log('[復元] 完了');
+            }, 100);
         }
     }
     
