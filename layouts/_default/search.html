@@ -75,7 +75,6 @@ window.addEventListener('load', () => {
     function performSearch(query, updateUrl = true, isRestore = false) {
         let displayLimit = 10;
         
-        
         if (isRestore) {
             const savedCount = sessionStorage.getItem('search-count');
             if (savedCount) displayLimit = parseInt(savedCount);
@@ -96,39 +95,17 @@ window.addEventListener('load', () => {
         if (isRestore) {
             const scrollY = sessionStorage.getItem('search-scroll');
             if (scrollY) {
-                const images = list.querySelectorAll('img');
-                if (images.length > 0) {
-                    let loadedCount = 0;
-                    const totalImages = images.length;
-                    
-                    const restoreScroll = () => {
-                        loadedCount++;
-                        if (loadedCount === totalImages) {
-                            requestAnimationFrame(() => {
-                                window.scrollTo(0, parseInt(scrollY));
-                            });
-                        }
-                    };
-                    
-                    images.forEach(img => {
-                        if (img.complete) {
-                            loadedCount++;
-                        } else {
-                            img.addEventListener('load', restoreScroll);
-                            img.addEventListener('error', restoreScroll);
-                        }
-                    });
-                    
-                    if (loadedCount === totalImages) {
-                        requestAnimationFrame(() => {
-                            window.scrollTo(0, parseInt(scrollY));
-                        });
-                    }
-                } else {
+                // 画像読み込みを待たず、DOMの高さ計算だけ待つ
+                requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         window.scrollTo(0, parseInt(scrollY));
+                        
+                        // スクロール後に微調整（画像読み込み完了後）
+                        setTimeout(() => {
+                            window.scrollTo(0, parseInt(scrollY));
+                        }, 300);
                     });
-                }
+                });
             }
         }
     }
