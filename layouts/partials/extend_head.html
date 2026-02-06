@@ -1,5 +1,4 @@
 {{- if .IsNode -}}
-<script src="{{ "js/load-more.js" | absURL }}"></script>
 <script>
 (function() {
     const STORAGE_KEY_SCROLL = 'infiniteScroll_pos_' + location.pathname;
@@ -7,7 +6,7 @@
     
     console.log('[復元] スクリプト開始');
     
-    // 復元処理
+    // 復元処理（DOMContentLoadedを待つ）
     const savedScrollPos = sessionStorage.getItem(STORAGE_KEY_SCROLL);
     const savedHTML = sessionStorage.getItem(STORAGE_KEY_HTML);
     
@@ -18,20 +17,22 @@
     }
     
     if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
-        const main = document.querySelector('.main');
-        
-        if (main) {
-            console.log('[復元] HTMLを復元します');
-            main.innerHTML = savedHTML;
+        document.addEventListener('DOMContentLoaded', () => {
+            const main = document.querySelector('.main');
             
-            console.log('[復元] スクロール位置へ移動:', savedScrollPos);
-            setTimeout(() => {
-                window.scrollTo(0, parseInt(savedScrollPos));
-                sessionStorage.removeItem(STORAGE_KEY_SCROLL);
-                sessionStorage.removeItem(STORAGE_KEY_HTML);
-                console.log('[復元] 完了');
-            }, 100);
-        }
+            if (main) {
+                console.log('[復元] HTMLを復元します');
+                main.innerHTML = savedHTML;
+                
+                console.log('[復元] スクロール位置へ移動:', savedScrollPos);
+                setTimeout(() => {
+                    window.scrollTo(0, parseInt(savedScrollPos));
+                    sessionStorage.removeItem(STORAGE_KEY_SCROLL);
+                    sessionStorage.removeItem(STORAGE_KEY_HTML);
+                    console.log('[復元] 完了');
+                }, 100);
+            }
+        });
     }
     
     // 保存処理
