@@ -15,26 +15,31 @@
         const savedSizeKB = (new Blob([savedHTML]).size / 1024).toFixed(2);
         console.log('[復元] 保存データあり');
         console.log('[復元] 保存されたHTML容量:', savedSizeKB, 'KB');
-        console.log('[復元] 次ページURL:', savedNextLink);
+        console.log('[復元] 保存された次ページURL:', savedNextLink);
     }
     
     if (savedScrollPos && savedHTML && parseInt(savedScrollPos) > 0) {
         document.addEventListener('DOMContentLoaded', () => {
             const main = document.querySelector('.main');
+            const pagination = document.querySelector('.pagination');
             
-            if (main) {
+            if (main && pagination) {
+                console.log('[復元] 復元前のnextLink:', pagination.querySelector('a.next')?.href);
+                
                 console.log('[復元] HTMLを復元します');
                 main.innerHTML = savedHTML;
                 
-                // 復元したHTMLの中のnextLinkを正しいURLに更新
+                console.log('[復元] 復元後のnextLink:', pagination.querySelector('a.next')?.href);
+                
+                // nextLinkを更新
                 if (savedNextLink) {
-                    const pagination = document.querySelector('.pagination');
-                    if (pagination) {
-                        const nextLink = pagination.querySelector('a.next');
-                        if (nextLink) {
-                            nextLink.href = savedNextLink;
-                            console.log('[復元] nextLinkを更新:', savedNextLink);
-                        }
+                    const nextLink = pagination.querySelector('a.next');
+                    if (nextLink) {
+                        console.log('[復元] nextLinkを', nextLink.href, 'から', savedNextLink, 'に更新');
+                        nextLink.href = savedNextLink;
+                        console.log('[復元] 更新後:', pagination.querySelector('a.next')?.href);
+                    } else {
+                        console.log('[復元] nextLink要素が見つかりません');
                     }
                 }
                 
@@ -59,7 +64,6 @@
             const htmlSize = new Blob([htmlContent]).size;
             const htmlSizeKB = (htmlSize / 1024).toFixed(2);
             
-            // 次のページURLも保存
             const nextLink = document.querySelector('.pagination a.next');
             const nextUrl = nextLink ? nextLink.href : null;
             
