@@ -1,3 +1,70 @@
 {{- if .IsNode -}}
 <script src="{{ "js/load-more.js" | absURL }}"></script>
+<script>
+// load-more.jsの後に実行されるので、拡張・上書きができる
+(function() {
+    // スクロール位置と次ページURLを保存
+    window.addEventListener('beforeunload', () => {
+        sessionStorage.setItem('scrollPos_' + location.pathname, window.scrollY);
+        const nextLink = document.querySelector('.pagination a.next');
+        if (nextLink) {
+            sessionStorage.setItem('nextLink_' + location.pathname, nextLink.href);
+        }
+    });
+
+    // 復元処理
+    window.addEventListener('load', () => {
+        const savedScrollPos = sessionStorage.getItem('scrollPos_' + location.pathname);
+        const savedNextLink = sessionStorage.getItem('nextLink_' + location.pathname);
+        
+        if (savedScrollPos && savedNextLink) {
+            restoreState(savedNextLink, parseInt(savedScrollPos));
+        }
+    });
+
+    function restoreState(targetUrl, targetScroll) {
+        const main = document.querySelector('.main');
+        const currentNextLink = document.querySelector('.pagination a.next');
+        
+        if (!main || !currentNextLink) return;
+
+        // 目標URLに達するまで順次ロード
+        if (currentNextLink.href !== targetUrl) {
+            fetch(currentNextLink.href)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    const newPosts = doc.querySelectorAll('.post-entry');
+                    newPosts.forEach(post => main.appendChild(post));
+                    
+                    const newNextLink = doc.querySelector('.pagination a.next');
+                    if (newNextLink) {
+                        // ページネーションを更新
+                        const pagination = document.querySelector('.pagination');
+                        if (pagination) {
+                            const oldNext = pagination.querySelector('a.next');
+                            if (oldNext) oldNext.href = newNextLink.href;
+                        }
+                        // 再帰的に次をロード
+                        restoreState(targetUrl, targetScroll);
+                    } else {
+                        scrollToPosition(targetScroll);
+                    }
+                });
+        } else {
+            scrollToPosition(targetScroll);
+        }
+    }
+
+    function scrollToPosition(pos) {
+        setTimeout(() => {
+            window.scrollTo(0, pos);
+            sessionStorage.removeItem('scrollPos_' + location.pathname);
+            sessionStorage.removeItem('nextLink_' + location.pathname);
+        }, 100);
+    }
+})();
+</script>
 {{- end -}}
