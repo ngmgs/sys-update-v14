@@ -14,8 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 
 <script>
-// loadイベントではなく即座に実行
-(function() {
+window.addEventListener('load', () => {
     let fuse;
     let allResults = [];
     let currentDisplayCount = 10;
@@ -29,6 +28,7 @@
     sentinel.style.cssText = 'text-align:center; padding:20px; color:#666; font-size:14px; display:none;';
     list.parentNode.insertBefore(sentinel, list.nextSibling);
 
+    // URLの末尾にビルド時のタイムスタンプ（Unix時間）を自動で挿入します
     fetch('../index.json?v={{ now.Unix }}')
         .then(res => res.json())
         .then(data => {
@@ -45,15 +45,9 @@
             // 【復元】URLとセッションストレージから状態を戻す
             const params = new URLSearchParams(window.location.search);
             const savedQuery = params.get('s');
-            console.log('URLパラメータ s =', savedQuery);
-            console.log('sessionStorage search-count =', sessionStorage.getItem('search-count'));
-            console.log('sessionStorage search-scroll =', sessionStorage.getItem('search-scroll'));
-            
             if (savedQuery) {
                 input.value = savedQuery;
                 performSearch(savedQuery, false, true);
-            } else {
-                console.log('savedQueryがないため復元されませんでした');
             }
         });
 
@@ -81,6 +75,7 @@
     function performSearch(query, updateUrl = true, isRestore = false) {
         let displayLimit = 10;
         
+        // スマホ対策：戻った時だけ、前回表示していた件数を一気に復元
         if (isRestore) {
             const savedCount = sessionStorage.getItem('search-count');
             if (savedCount) displayLimit = parseInt(savedCount);
@@ -88,30 +83,22 @@
 
         allResults = fuse.search(query);
         currentDisplayCount = displayLimit;
-        list.innerHTML = allResults.slice(0, currentDisplayCount).map(res => renderItem(res, query)).join('');
+        list.innerHTML = allResults.slice(0, displayLimit).map(res => renderItem(res, query)).join('');
         
-        console.log('復元後のli要素数:', list.querySelectorAll('li').length);
-        console.log('currentDisplayCount:', currentDisplayCount);
-        console.log('リストの高さ:', list.scrollHeight);
-        
-        sentinel.style.display = allResults.length > currentDisplayCount ? 'block' : (allResults.length > 0 ? 'block' : 'none');
-        sentinel.textContent = allResults.length > currentDisplayCount ? '読み込み中...' : (allResults.length > 0 ? 'すべての結果を表示しました' : '一致する結果がありません');
+        sentinel.style.display = allResults.length > displayLimit ? 'block' : (allResults.length > 0 ? 'block' : 'none');
+        sentinel.textContent = allResults.length > displayLimit ? '読み込み中...' : (allResults.length > 0 ? 'すべての結果を表示しました' : '一致する結果がありません');
 
         if (updateUrl) {
             const newUrl = window.location.pathname + (query ? '?s=' + encodeURIComponent(query) : '');
             window.history.replaceState(null, '', newUrl);
         }
 
+        // スマホ対策：描画完了を待ってからスクロール位置を復元
         if (isRestore) {
             const scrollY = sessionStorage.getItem('search-scroll');
-            console.log('復元予定のスクロール位置:', scrollY);
             if (scrollY) {
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        window.scrollTo(0, parseInt(scrollY));
-                        console.log('実際のスクロール位置:', window.scrollY);
-                    });
-                });
+                // スマホのレンダリング時間を考慮して少し待機
+                setTimeout(() => window.scrollTo(0, parseInt(scrollY)), 100);
             }
         }
     }
@@ -157,6 +144,6 @@
     }, { rootMargin: '200px' });
 
     observer.observe(sentinel);
-})();  // ← ここに () を追加
+});
 </script>
 {{- end }}
