@@ -1,22 +1,24 @@
 {{- define "main" }}
 
-{{- if .Content }}
-<div class="post-content">
-  {{ .Content }}
-</div>
-{{- end }}
-
 <!-- ピカチュウタグの最新10件 -->
 <header class="page-header">
   <h1>ピカチュウの記事</h1>
 </header>
 {{- $pikachu := where .Site.RegularPages "Params.tags" "intersect" (slice "ピカチュウ") }}
-{{- if $pikachu }}
-<section class="post-entry-content">
-  {{- range first 10 $pikachu }}
-  {{- partial "post_card.html" . }}
+{{- range first 10 $pikachu }}
+<article class="post-entry">
+  <header class="entry-header">
+    <h2><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
+  </header>
+  {{- if .Summary }}
+  <div class="entry-content">
+    <p>{{ .Summary }}</p>
+  </div>
   {{- end }}
-</section>
+  <footer class="entry-footer">
+    <time>{{ .Date.Format "2006-01-02" }}</time>
+  </footer>
+</article>
 {{- end }}
 
 <!-- リザードンタグの最新10件 -->
@@ -24,23 +26,40 @@
   <h1>リザードンの記事</h1>
 </header>
 {{- $charizard := where .Site.RegularPages "Params.tags" "intersect" (slice "リザードン") }}
-{{- if $charizard }}
-<section class="post-entry-content">
-  {{- range first 10 $charizard }}
-  {{- partial "post_card.html" . }}
+{{- range first 10 $charizard }}
+<article class="post-entry">
+  <header class="entry-header">
+    <h2><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
+  </header>
+  {{- if .Summary }}
+  <div class="entry-content">
+    <p>{{ .Summary }}</p>
+  </div>
   {{- end }}
-</section>
+  <footer class="entry-footer">
+    <time>{{ .Date.Format "2006-01-02" }}</time>
+  </footer>
+</article>
 {{- end }}
 
 <!-- 全ての最新10件 -->
 <header class="page-header">
   <h1>最新記事</h1>
 </header>
-{{- $pages := where site.RegularPages "Type" "in" site.Params.mainSections }}
-<section class="post-entry-content">
-  {{- range first 10 $pages }}
-  {{- partial "post_card.html" . }}
+{{- range first 10 .Site.RegularPages }}
+<article class="post-entry">
+  <header class="entry-header">
+    <h2><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
+  </header>
+  {{- if .Summary }}
+  <div class="entry-content">
+    <p>{{ .Summary }}</p>
+  </div>
   {{- end }}
-</section>
+  <footer class="entry-footer">
+    <time>{{ .Date.Format "2006-01-02" }}</time>
+  </footer>
+</article>
+{{- end }}
 
-{{- end }}{{/* end main */}}
+{{- end }}
