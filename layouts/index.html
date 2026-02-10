@@ -1,0 +1,46 @@
+{{- define "main" }}
+
+{{- if .Content }}
+<div class="post-content">
+  {{ .Content }}
+</div>
+{{- end }}
+
+<!-- ピカチュウタグの最新10件 -->
+<header class="page-header">
+  <h1>ピカチュウの記事</h1>
+</header>
+{{- $pikachu := where .Site.RegularPages "Params.tags" "intersect" (slice "ピカチュウ") }}
+{{- if $pikachu }}
+<section class="post-entry-content">
+  {{- range first 10 $pikachu }}
+  {{- partial "post_card.html" . }}
+  {{- end }}
+</section>
+{{- end }}
+
+<!-- リザードンタグの最新10件 -->
+<header class="page-header">
+  <h1>リザードンの記事</h1>
+</header>
+{{- $charizard := where .Site.RegularPages "Params.tags" "intersect" (slice "リザードン") }}
+{{- if $charizard }}
+<section class="post-entry-content">
+  {{- range first 10 $charizard }}
+  {{- partial "post_card.html" . }}
+  {{- end }}
+</section>
+{{- end }}
+
+<!-- 全ての最新10件 -->
+<header class="page-header">
+  <h1>最新記事</h1>
+</header>
+{{- $pages := where site.RegularPages "Type" "in" site.Params.mainSections }}
+<section class="post-entry-content">
+  {{- range first 10 $pages }}
+  {{- partial "post_card.html" . }}
+  {{- end }}
+</section>
+
+{{- end }}{{/* end main */}}
