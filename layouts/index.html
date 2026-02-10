@@ -1,9 +1,22 @@
 {{- define "main" }}
 
+<style>
+@media (min-width: 768px) {
+  .post-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+</style>
+
 <!-- ピカチュウタグの最新10件 -->
 <header class="page-header">
-  <h1>ピカチュウの記事</h1>
+  <h1>ピカチュウの記事 
+    <a href="/tags/ピカチュウ/" style="font-size: 0.6em; margin-left: 10px;">すべて見る →</a>
+  </h1>
 </header>
+<div class="post-grid">
 {{- $pikachu := where .Site.RegularPages "Params.tags" "intersect" (slice "ピカチュウ") }}
 {{- range first 10 $pikachu }}
 <article class="post-entry">
@@ -20,11 +33,15 @@
   </footer>
 </article>
 {{- end }}
+</div>
 
 <!-- リザードンタグの最新10件 -->
 <header class="page-header">
-  <h1>リザードンの記事</h1>
+  <h1>リザードンの記事 
+    <a href="/tags/リザードン/" style="font-size: 0.6em; margin-left: 10px;">すべて見る →</a>
+  </h1>
 </header>
+<div class="post-grid">
 {{- $charizard := where .Site.RegularPages "Params.tags" "intersect" (slice "リザードン") }}
 {{- range first 10 $charizard }}
 <article class="post-entry">
@@ -41,11 +58,15 @@
   </footer>
 </article>
 {{- end }}
+</div>
 
 <!-- 全ての最新10件 -->
 <header class="page-header">
-  <h1>最新記事</h1>
+  <h1>最新記事 
+    <a href="/posts/" style="font-size: 0.6em; margin-left: 10px;">すべて見る →</a>
+  </h1>
 </header>
+<div class="post-grid">
 {{- range first 10 .Site.RegularPages }}
 <article class="post-entry">
   <header class="entry-header">
@@ -61,5 +82,6 @@
   </footer>
 </article>
 {{- end }}
+</div>
 
 {{- end }}
