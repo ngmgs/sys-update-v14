@@ -62,6 +62,6 @@
 }
 
 /* 記事ページタイトルのフォントサイズ */
-.post-title entry-hint-parent {
+.post-title.entry-hint-parent {
     font-size: 30px;
 }
