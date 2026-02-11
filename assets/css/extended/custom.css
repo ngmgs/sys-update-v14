@@ -60,3 +60,8 @@
     background: #e2b13c;
     opacity: 0.9;
 }
+
+/* 記事ページタイトルのフォントサイズ */
+.post-title entry-hint-parent {
+    font-size: 30px;
+}
