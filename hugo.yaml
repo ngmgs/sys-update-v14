@@ -34,7 +34,7 @@ params:
   title: "俺の爆速ブログ"
   description: "ブログ"
   keywords: [Blog, Portfolio, PaperMod]
-  author: ""
+  author: "俺の爆速ブログ"
   DateFormat: "2006年01月02日 15:04"
   defaultTheme: auto
   disableThemeToggle: false
