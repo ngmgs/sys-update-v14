@@ -1,3 +1,5 @@
+languageCode: ja-jp
+
 baseURL: "https://test-hugo.wikinist.com/"
 title: "俺の爆速ブログ"
 theme: PaperMod
