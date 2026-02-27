@@ -22,7 +22,7 @@ jobs:
       - name: init-environment
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: 'latest'
+          hugo-version: '0.157.0'
           extended: true
 
       - name: cache-sys-files
