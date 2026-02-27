@@ -49,6 +49,8 @@ params:
   ShowWordCount: false
   UseHugoToc: false
 
+  TwitterCard: summary
+
   # --- 追加：サマリーでHTML（画像）をそのまま表示する設定 ---
   renderSummaryHTML: true
 
